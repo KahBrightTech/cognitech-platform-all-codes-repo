@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Start or stop an EC2 Instance based on the provided instance ID.
+
+Parameters:
+  InstanceId:
+    Type: String
+    Description: The ID of the EC2 instance to stop
+
+Resources:
+  TriggerLambda:
+    Type: Custom::StartStopEC2Instance
+    Properties:
+      ServiceToken: arn:aws:lambda:us-east-1:485147667400:function:prod-StopInstance
+      InstanceId: !Ref InstanceId
+
+Outputs:
+  LambdaInvocation:
+    Description: Lambda was triggered with the provided EC2 Instance ID
+    Value: !Ref InstanceId

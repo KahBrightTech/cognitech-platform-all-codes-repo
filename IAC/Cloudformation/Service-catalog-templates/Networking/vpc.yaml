@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates VPC and subnets for compute resources on app subnet       
+Parameters: 
+  pAwsAccount:
+    Description: The account in which the resources will be created
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /standard/AWSAccount
+    ConstraintDescription: Must be a valid AWS account parameter
+
+  pAwsAccountLC:
+    Description: The account in which the resources will be created
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /standard/AWSAccountLC
+    ConstraintDescription: Must be a valid AWS account parameter
+
+  pVPCCidr:
+    Description: The CIDR block of the VPC being created
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: Must be a valid IPv4 CIDR block
+
+  pPrivateSubnet1CIDR:
+    Description: The CIDR block for the first private subnet
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: Must be a valid IPv4 CIDR block
+
+  pPrivateSubnet2CIDR:
+    Description: The CIDR block for the second private subnet
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: Must be a valid IPv4 CIDR block
+
+  pPublicSubnet1CIDR:
+    Description: The CIDR block for the first public subnet
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: Must be a valid IPv4 CIDR block
+
+  pPublicSubnet2CIDR:
+    Description: The CIDR block for the second public subnet
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: Must be a valid IPv4 CIDR block
+
+  pAvailabilityZones:
+    Description: The availability zones on which to create the resources
+    Type: CommaDelimitedList
+    ConstraintDescription: Comma-delimited list of availability zones in the region
+
+  pAppName:
+    Description: The app consuming these resources
+    Type: String
+    AllowedPattern: '^[a-zA-Z0-9\-]+$'
+    ConstraintDescription: Must only contain alphanumeric characters and hyphens
+
+  pEnvironment:
+    Description: Environment name
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+    ConstraintDescription: Must be one of dev, test, or prod
+
+  pInstanceTenancy:
+    Description: VPC instance tenancy option
+    Type: String
+    Default: default
+    AllowedValues:
+      - default
+      - dedicated
+    ConstraintDescription: Choose whether VPC uses default or dedicated tenancy
+
+  pEnableDnsSupport:
+    Description: Whether to enable DNS support in the VPC
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be either true or false
+
+  pEnableDnsHostnames:
+    Description: Whether to enable DNS hostnames in the VPC
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be either true or false
+
+Resources: 
+  rNestedVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref pVPCCidr
+      EnableDnsSupport: !Ref pEnableDnsSupport
+      EnableDnsHostnames: !Ref pEnableDnsHostnames
+      InstanceTenancy: !Ref pInstanceTenancy
+      Tags:
+        - Key: Name
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-${ pEnvironment }-vpc
+
+  rNestedInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref rNestedVPC
+      InternetGatewayId: !Ref rNestedInternetGateway
+
+  rNestedNatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt rNestedElasticIP1.AllocationId
+      SubnetId: !Ref rNestedPublicSubnet1
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-ngw1
+
+  rNestedElasticIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  
+  rNestedNatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt rNestedElasticIP2.AllocationId
+      SubnetId: !Ref rNestedPublicSubnet2
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-ngw2
+
+  rNestedElasticIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  rNestedPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [0, !Ref pAvailabilityZones]
+      CidrBlock: !Ref pPrivateSubnet1CIDR
+      VpcId: !Ref rNestedVPC
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-private-subnet-1
+
+  rNestedPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [1, !Ref pAvailabilityZones]
+      CidrBlock: !Ref pPrivateSubnet2CIDR
+      VpcId: !Ref rNestedVPC
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-private-subnet-2
+
+  rNestedPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [0, !Ref pAvailabilityZones]
+      CidrBlock: !Ref pPublicSubnet1CIDR
+      VpcId: !Ref rNestedVPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-public-subnet-1
+
+  rNestedPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: !Select [1, !Ref pAvailabilityZones]
+      CidrBlock: !Ref pPublicSubnet2CIDR
+      VpcId: !Ref rNestedVPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-public-subnet-2
+
+  rNestedPublicSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref rNestedVPC 
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-public-subnet1-rt
+
+  rNestedPublicSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref rNestedVPC 
+      Tags: 
+        - Key: Name 
+          Value: !Sub ${ pAwsAccount }-${ AWS::Region }-${ pAppName }-public-subnet2-rt
+
+  rNestedPublicSubnet1Route:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref rNestedInternetGateway
+      RouteTableId: !Ref rNestedPublicSubnet1RouteTable
+
+  rNestedPublicSubnet2Route:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref rNestedInternetGateway
+      RouteTableId: !Ref rNestedPublicSubnet2RouteTable
+
+  rNestedPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref rNestedPublicSubnet1RouteTable
+      SubnetId: !Ref rNestedPublicSubnet1
+
+  rNestedPublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref rNestedPublicSubnet2RouteTable
+      SubnetId: !Ref rNestedPublicSubnet2
+
+Outputs:
+  oVPC:
+    Description: The ID of the VPC
+    Value: !Ref rNestedVPC
