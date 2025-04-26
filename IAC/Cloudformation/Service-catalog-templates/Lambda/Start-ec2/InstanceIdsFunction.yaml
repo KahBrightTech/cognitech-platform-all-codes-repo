@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Prebuilt Lambda function that checks EC2 instance states and starts them if not running
+
+Parameters:
+  pAwsAccount:
+    Description: The account in which the resources will be created
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /standard/AWSAccount
+    ConstraintDescription: Must be a valid AWS account parameter
+
+  pAwsAccountLC:
+    Description: The account in which the resources will be created
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /standard/AWSAccountLC
+    ConstraintDescription: Must be a valid AWS account parameter
+
+  pFunctionName:
+    Type: String
+    Default: StartMultipleInstances
+    Description: Name of the Lambda function
+
+Resources:
+  rStartEC2InstanceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${pAwsAccountLC}-${pFunctionName}
+      Description: Starts EC2 instances if they are not already running
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt rLambdaExecutionRole.Arn
+      Timeout: 120
+      Code:
+        ZipFile: |
+          import boto3
+          import logging
+          import json
+          import urllib3
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          http = urllib3.PoolManager()
+
+          def send_response(event, context, status, data=None, physical_resource_id=None):
+              response_body = {
+                  'Status': status,
+                  'Reason': f'See logs in {context.log_stream_name}',
+                  'PhysicalResourceId': physical_resource_id or context.log_stream_name,
+                  'StackId': event['StackId'],
+                  'RequestId': event['RequestId'],
+                  'LogicalResourceId': event['LogicalResourceId'],
+                  'Data': data if isinstance(data, dict) else {}
+              }
+              json_response = json.dumps(response_body)
+              headers = {'Content-Type': ''}
+              try:
+                  http.request("PUT", event["ResponseURL"], body=json_response, headers=headers)
+              except Exception as e:
+                  logger.error(f"send_response failed: {e}")
+
+          def lambda_handler(event, context):
+              logger.info(f"Received event: {json.dumps(event)}")
+              try:
+                  props = event.get('ResourceProperties', {})
+                  instance_ids = props.get('InstanceIds', [])
+                  if not instance_ids:
+                      raise ValueError("Missing 'InstanceIds' in ResourceProperties")
+
+                  ec2 = boto3.resource('ec2')
+                  result = []
+                  for instance_id in instance_ids:
+                      instance = ec2.Instance(instance_id)
+                      state = instance.state['Name']
+                      logger.info(f"Instance {instance_id} is currently {state}")
+
+                      if state != 'running':
+                          instance.start()
+                          instance.wait_until_running()
+                          logger.info(f"Started instance {instance_id}")
+                          result.append({'InstanceId': instance_id, 'State': 'started'})
+                      else:
+                          result.append({'InstanceId': instance_id, 'State': 'already running'})
+
+                  send_response(event, context, 'SUCCESS', {'Result': result})
+              except Exception as e:
+                  logger.error(str(e))
+                  send_response(event, context, 'FAILED', {'Message': str(e)})
+
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pAwsAccountLC}-${pFunctionName}
+      RetentionInDays: 14
+
+  rLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${pAwsAccountLC}-${pFunctionName}-Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaEC2Permissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:StartInstances
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pAwsAccountLC}-${pFunctionName}:*
+
+  rLambdaPermissionForCloudFormation:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref rStartEC2InstanceLambda
+      Action: lambda:InvokeFunction
+      Principal: cloudformation.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the deployed Lambda function
+    Value: !GetAtt rStartEC2InstanceLambda.Arn
+
+  LambdaFunctionName:
+    Description: Name of the deployed Lambda function
+    Value: !Ref pFunctionName
