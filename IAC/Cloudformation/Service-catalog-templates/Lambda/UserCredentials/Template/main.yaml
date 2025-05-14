@@ -2,65 +2,48 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Weekly IAM credential age report with SNS notification
 
 Parameters:
-  NotificationEmail:
+  pNotificationEmail:
     Type: String
     Description: Email address to subscribe to the report
 
-  LambdaCodeBucket:
+  pLambdaCodeBucket:
     Type: String
     Description: S3 bucket containing Lambda code zips
 
-Resources:
+  pProjectName:
+    Type: String
+    Description: The name of the project
 
-  IAMCredentialTopic:
+Resources:
+  rIAMCredentialTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: IAMCredentialReportTopic
+      TopicName: !Sub ${pProjectName}-topic
       Subscription:
         - Protocol: email
-          Endpoint: !Ref NotificationEmail
+          Endpoint: !Ref pNotificationEmail
 
-  LambdaLayer:
+  rLambdaLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
-      LayerName: CommonPythonDeps
+      LayerName: !Sub ${pProjectName}-common-layer
       Description: Shared layer for Lambda dependencies
       Content:
-        S3Bucket: !Ref LambdaCodeBucket
-        S3Key: layers/common_layer.zip  # you must upload this
+        S3Bucket: !Ref pLambdaCodeBucket
+        S3Key: IAM-Credentials/layers/python.zip
       CompatibleRuntimes:
         - python3.12
 
-  NotificationLambdaRole:
-    Type: AWS::IAM::Role
+  rGenerateReportLogGroup:
+    Type: AWS::Logs::LogGroup
     Properties:
-      RoleName: IAMReportNotifierRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: NotifySNSPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action: sns:Publish
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: '*'
+      LogGroupName: !Sub /aws/lambda/${pProjectName}-rGenerateReportFunction
+      RetentionInDays: 14
 
-  ReportLambdaRole:
+  rReportLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: IAMReportGeneratorRole
+      RoleName: !Sub ${pProjectName}-ReportRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -79,82 +62,54 @@ Resources:
                   - iam:GetUser
                   - iam:ListAccessKeys
                   - iam:GetAccessKeyLastUsed
-                  - lambda:InvokeFunction
+                  - sns:Publish
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: '*'
+                Resource: !GetAtt rGenerateReportLogGroup.Arn
 
-  SendNotificationFunction:
+  rGenerateReportFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: SendIAMReportNotification
+      FunctionName: !Sub ${pProjectName}-GenerateReportFunction
+      Description: Generates IAM credential report and sends SNS notification
       Runtime: python3.12
-      Handler: send_notification.lambda_handler
-      Role: !GetAtt NotificationLambdaRole.Arn
+      Handler: lambda_handler.lambda_handler
+      Role: !GetAtt rReportLambdaRole.Arn
       Code:
-        S3Bucket: !Ref LambdaCodeBucket
-        S3Key: send_notification.zip
-      Layers:
-        - !Ref LambdaLayer
-      Environment:
-        Variables:
-          SNS_TOPIC_ARN: !Ref IAMCredentialTopic
-
-  GenerateReportFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: GenerateIAMCredentialReport
-      Runtime: python3.12
-      Handler: generate_iam_report.lambda_handler
-      Role: !GetAtt ReportLambdaRole.Arn
-      Code:
-        S3Bucket: !Ref LambdaCodeBucket
-        S3Key: generate_iam_report.zip
+        S3Bucket: !Ref pLambdaCodeBucket
+        S3Key: IAM-Credentials/codes/generate_iam_report.zip
       Timeout: 300
       Layers:
-        - !Ref LambdaLayer
+        - !Ref rLambdaLayer
       Environment:
         Variables:
-          NOTIFY_FUNCTION_NAME: !Ref SendNotificationFunction
-          SNS_TOPIC_ARN: !Ref IAMCredentialTopic
+          SNS_TOPIC_ARN: !Ref rIAMCredentialTopic
 
-  WeeklyScheduleRule:
+  rWeeklyScheduleRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: TriggerIAMCredentialCheck
+      Name: !Sub ${pProjectName}-TriggerIAMCredentialCheck
       ScheduleExpression: cron(0 8 ? * 2 *) # Monday at 08:00 UTC
       State: ENABLED
       Targets:
-        - Arn: !GetAtt GenerateReportFunction.Arn
+        - Arn: !GetAtt rGenerateReportFunction.Arn
           Id: WeeklyIAMCheck
 
-  LambdaInvokePermission:
+  rLambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref GenerateReportFunction
+      FunctionName: !Ref rGenerateReportFunction
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt WeeklyScheduleRule.Arn
-
-  NotificationInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref SendNotificationFunction
-      Action: lambda:InvokeFunction
-      Principal: lambda.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt rWeeklyScheduleRule.Arn
 
 Outputs:
-  SNSArn:
-    Value: !Ref IAMCredentialTopic
+  oSNSArn:
+    Value: !Ref rIAMCredentialTopic
     Description: SNS Topic ARN
 
-  ReportLambdaName:
-    Value: !Ref GenerateReportFunction
-
-  NotificationLambdaName:
-    Value: !Ref SendNotificationFunction
+  oReportLambdaName:
+    Value: !Ref rGenerateReportFunction

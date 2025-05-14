@@ -1,10 +1,14 @@
 [
   {
-    "ParameterKey": "NotificationEmail",
-    "ParameterValue": "you@example.com"
+    "ParameterKey": "pNotificationEmail",
+    "ParameterValue": "kbrigthain@gmail.com"
   },
   {
-    "ParameterKey": "LambdaCodeBucket",
-    "ParameterValue": "my-lambda-code-bucket"
+    "ParameterKey": "pLambdaCodeBucket",
+    "ParameterValue": "cognitech-lambdas-bucket"
+  },
+  {
+    "ParameterKey": "pProjectName",
+    "ParameterValue": "UserCredentials"
   }
 ]
