@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "NotificationEmail",
+    "ParameterValue": "you@example.com"
+  },
+  {
+    "ParameterKey": "LambdaCodeBucket",
+    "ParameterValue": "my-lambda-code-bucket"
+  }
+]
