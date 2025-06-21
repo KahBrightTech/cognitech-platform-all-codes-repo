@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SCP to deny use of AMIs not approved by tag from a specific AWS Organization
+Parameters:
+  OrganizationId:
+    Type: String
+    Description: The ID of the AWS Organization to which the policy will be applied
+    Default: "r-zwp5"  # Example organization ID, replace with actual
+
+Resources:
+  ApprovedAMIUseOnlyPolicy:
+    Type: AWS::Organizations::Policy
+    Properties:
+      Name: DenyUnapprovedAMIs
+      Description: Deny launching AMIs unless tagged with Approved=true and shared from the allowed org
+      Type: SERVICE_CONTROL_POLICY
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Deny"
+            Action: "ec2:RunInstances"
+            Resource: "*"
+            Condition:
+              StringNotEqualsIfExists:
+                ec2:ResourceTag/Approved: "true"
+              StringNotEquals:
+                ec2:OwnerOrgArn: "arn:aws:organizations::485147667400:ou/o-orvtyisdyc/ou-zwp5-6deqkj3c"
+      TargetIds:
+        - !Ref OrganizationId
+
+Outputs:
+  SCPName:
+    Description: Name of the created SCP
+    Value: !Ref ApprovedAMIUseOnlyPolicy

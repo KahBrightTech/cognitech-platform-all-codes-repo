@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SCP to deny launching EC2 instances using AMIs not tagged with Approved=true
+
+Parameters:
+  OrganizationId:
+    Type: String
+    Description: The AWS Organization root or OU ID to which the SCP will be attached
+    Default: "r-zwp5"
+
+Resources:
+  ApprovedAMIUseOnlyPolicy:
+    Type: AWS::Organizations::Policy
+    Properties:
+      Name: DenyUnapprovedAMIs
+      Description: Deny launching EC2 instances unless the AMI is tagged with Approved=true
+      Type: SERVICE_CONTROL_POLICY
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "DenyUnapprovedAMIs"
+            Effect: "Deny"
+            Action: "ec2:RunInstances"
+            Resource: "*"
+            Condition:
+              StringNotEquals:
+                ec2:ImageTag/Approved: "true"
+        # Deny if AMI owner not in approved accounts
+          - Sid: "DenyIfAMIFromUnapprovedOwner"
+            Effect: "Deny"
+            Action: "ec2:RunInstances"
+            Resource: "*"
+            Condition:
+              StringNotEquals:
+                ec2:Owner:
+                  - "485147667400"
+      TargetIds:
+        - !Ref OrganizationId
+
+Outputs:
+  SCPName:
+    Description: Name of the created Service Control Policy
+    Value: !Ref ApprovedAMIUseOnlyPolicy
