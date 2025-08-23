@@ -1,0 +1,151 @@
+schemaVersion: '2.2'
+description: "Document to create ansible master on instances"
+parameters: 
+    pSSHDConfigFilePath:
+      description: Path to the sshd_config file
+      type: String
+      default: "/etc/ssh/sshd_config"
+
+    pSudoersFilePath:
+      description: Path to the sudoers file
+      type: String
+      default: "/etc/sudoers"
+    
+    pUserName:
+      description: The User to be created
+      type: String
+      default: "ansible"
+   
+    pPassword:
+      description: The password for the created user
+      type: String
+      default: "{{ssm:/standard/ansible/password}}"
+
+    pS3ConfigFileUrl:
+      description: The path to the ansible config file in S3
+      type: String
+      default: "{{ssm:/standard/ansible/configfile}}"
+
+    pS3HostFileUrl:
+      description: The path to the ansible host file in S3
+      type: String
+      default: "{{ssm:/standard/ansible/hostfile}}"
+
+    pAnsibleConfigPath:
+      description: The ansible configuration file path 
+      type: String
+      default: "/etc/ansible/"
+
+    pAWSRegion:
+      description: The region where the S3 bucket is located 
+      type: String
+      default: "us-east-1"
+
+
+mainSteps:
+          - action: aws:runShellScript
+            name: CreateandConfigureUser
+            description:  |
+              Creates a user and adds the user to the sudoers file
+            inputs:
+              runCommand:
+                  - |
+                        #!/bin/bash -xe
+                        ##########################################
+                        # CREATE USER AND ADD TO SUDOERS FILE  #
+                        ##########################################
+                        # Create new linux user
+                        if id -u "{{ pUserName }}" >/dev/null 2>&1; then
+                            echo "User \"{{ pUserName }}\" already exists."
+                        else
+                            echo "Creating user \"{{ pUserName }}\"..."
+                            sudo useradd -m "{{ pUserName }}"
+                            echo "{{ pUserName }}:{{ pPassword }}" | sudo chpasswd
+                            echo "User \"{{ pUserName }}\" has been created with the specified password."
+                        fi
+
+                        # Add the user directly to the sudoers file
+                        if sudo grep -q "^{{ pUserName }}" "{{ pSudoersFilePath }}"; then
+                            echo "User '{{ pUserName }}' already has sudo privileges."
+                        else
+                            echo "Granting '{{ pUserName }}' NOPASSWD privileges..."
+                            echo "{{ pUserName }} ALL=(ALL) NOPASSWD:ALL" | sudo tee -a "{{ pSudoersFilePath }}" > /dev/null
+                        fi
+
+                        ###############################################
+                            # CREATE .SSH DIRECTORY FOR ANSIBLE USER  #
+                        ###############################################
+                        # Check for .ssh directory and create it if not exists
+                        if [ ! -d "/home/{{ pUserName }}/.ssh" ]; then
+                            echo "Creating .ssh directory for user {{ pUserName }}..."
+                            sudo mkdir -m 700 /home/{{ pUserName }}/.ssh
+                            sudo chown {{ pUserName }}:{{ pUserName }} /home/{{ pUserName }}/.ssh
+                        fi
+
+                        ###############################################
+                        # UPDATE THE SSHD CONFIG FILE #
+                        ###############################################
+                        # Step 1: Enable PasswordAuthentication if not already enabled
+                        if sudo grep -q "^PasswordAuthentication yes" "{{ pSSHDConfigFilePath }}"; then
+                            echo "PasswordAuthentication is already set to yes."
+                        else
+                            echo "Setting PasswordAuthentication to yes..."
+                            sudo sed -i 's/^#PasswordAuthentication no/PasswordAuthentication yes/' "{{ pSSHDConfigFilePath }}"
+                            sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' "{{ pSSHDConfigFilePath }}"
+                            echo "PasswordAuthentication has been set to yes."
+                        fi
+
+                        # Step 2: Enable PermitRootLogin if not already enabled
+                        if sudo grep -q "^#PermitRootLogin" "{{ pSSHDConfigFilePath }}" || sudo grep -q "^PermitRootLogin no" "{{ pSSHDConfigFilePath }}"; then
+                            echo "Enabling PermitRootLogin..."
+                            sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' "{{ pSSHDConfigFilePath }}"
+                            sudo sed -i 's/^PermitRootLogin no/PermitRootLogin yes/' "{{ pSSHDConfigFilePath }}"
+                            echo "PermitRootLogin has been set to yes."
+                            # Restart SSH service to apply changes
+                            sudo systemctl restart sshd
+                        fi
+
+                        ###############################################
+                        # INSTALL ANSIBLE BASED ON OS VERSION #
+                        ###############################################
+                        OS_VERSION=$(cat /etc/os-release | grep ^VERSION_ID | cut -d'=' -f2 | tr -d '"')
+
+                        if [[ "$OS_VERSION" == "2" ]]; then
+                            echo "Installing Ansible on Amazon Linux 2..."
+                            sudo yum update -y
+                            sudo amazon-linux-extras enable ansible2
+                            sudo yum install -y ansible
+                        elif [[ "$OS_VERSION" == "2023" ]]; then
+                            echo "Installing Ansible on Amazon Linux 2023..."
+                            sudo dnf update -y
+                            sudo dnf install -y ansible
+                        fi
+
+                        # Wait for Ansible to install and verify installation
+                        sleep 10
+                        if ansible --version >/dev/null 2>&1; then
+                            echo "Ansible installed successfully!"
+                        else
+                            echo "Ansible installation failed! Exiting..."
+                            exit 1
+                        fi
+
+                        #############################################################
+                        # UPDATE DEFAULT ANSIBLE DIRECTORY OWNERSHIP TO ANSIBLE USER #
+                        #############################################################
+                        sudo -u {{ pUserName }} sudo chown -R {{ pUserName }}:{{ pUserName }} /etc/ansible/ 
+
+                        ######################################################
+                        # DOWNLOAD CONFIGURATION AND HOST FILE & PRIVATE KEY #
+                        ######################################################
+                        # Copy Ansible config file from S3 as ansible user
+                        sudo -u {{ pUserName }} aws s3 cp "{{ pS3ConfigFileUrl }}" "{{ pAnsibleConfigPath }}" --region {{ pAWSRegion }}
+
+                        # Copy Ansible hosts file from S3 as ansible user
+                        sudo -u {{ pUserName }} aws s3 cp "{{ pS3HostFileUrl }}" "{{ pAnsibleConfigPath }}" --region {{ pAWSRegion }}
+
+                        # Retrieve private key from AWS Secrets Manager as ansible user
+                        sudo -u {{ pUserName }} aws secretsmanager get-secret-value --secret-id privatekeypair --query SecretString --output text > id_rsa.pem > /home/{{ pUserName }}/.ssh/id_rsa
+                        sudo -u {{ pUserName }} sudo chmod 600 /home/{{ pUserName }}/.ssh/id_rsa
+                        sudo -u {{ pUserName }} sudo chown {{ pUserName }}:{{ pUserName }} /home/{{ pUserName }}/.ssh/id_rsa
+                        echo "SSM document execution complete!"
