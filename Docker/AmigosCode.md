@@ -353,3 +353,224 @@ Using tags:
    - You can also use multiple tags for a single image, allowing you to reference the same image with different names or versions.
    - You can get a specific tag on docker hub by searching for the image and selecting the desired tag from the list of available tags.
    - Older tags are still available on Docker Hub, allowing you to roll back to a previous version if needed.
+   - You can also run a command like docker build -t highway:1.0 . to specify a specific tag when building your image.
+   - This helps with version control and ensures that you can easily reproduce a specific build if necessary.
+Running containers using specific tags:
+   - To run a container using a specific tag, you can use the following command:
+   ```
+   docker run <image-name>:<tag>
+   ```
+   - For example, to run a container using the "1.0" tag of your image, you would run:
+   ```
+   docker run my-image:1.0
+   ```
+   - This will start a new container using the specified image and tag.
+Tagging override:
+   - whenever you make a change to your dockerfile and run a build using the same tag it overrides the previous image with the new one.
+   - This means that if you need to roll back to a previous version, you may need to re-tag the old image with the same tag before building the new one.
+Tagging images:
+   - You can tag your images using the -t flag when building your image.
+   - For example, to tag your image as "my-image:1.0", you would run:
+   ```
+   docker build -t my-image:1.0 .
+   ```
+   - This will create a new image with the specified tag.
+   - You can also add multiple tags to a single image by specifying the -t flag multiple times.
+   - For example:
+   ```
+   docker build -t my-image:1.0 -t my-image:latest .
+   ```
+   - This will create an image with both the "1.0" and "latest" tags.
+   - You can also change the existing tag of an image by running:
+   ```
+   docker tag my-image:old my-image:new
+   ```
+   - This will change the tag of the "old" image to "new".
+   - This is useful for managing different versions of your images and ensuring that you can easily switch between them as needed.
+   - This keeps both images available, allowing you to roll back to the previous version if necessary.
+   - You can now spin up a container using either tag:
+   ```
+   docker run my-image:1.0
+   ```
+   ```
+   docker run my-image:latest
+   ```
+   - You can make changes to your source code and rebuild your image with a new tag to reflect the changes.
+   - For example, if you make changes to your application and want to create a new version, you can run:
+   ```
+   docker build -t my-image:1.1 .
+   ```
+      1. How tags help with versioning
+
+      Tags are just labels that point to a specific image. They let you manage different builds of the same project.
+
+      Example workflow:
+      # First release
+      docker build -t highway:1.0 .
+      # Later you change the HTML/CSS/JS
+      docker build -t highway:1.1 .
+      # Another big change
+      docker build -t highway:2.0 .
+      Now you have multiple versions of the highway image locally:
+      docker images
+      REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+      highway      1.0     abcd1234       2 weeks ago      24MB
+      highway      1.1     efgh5678       3 days ago       24MB
+      highway      2.0     xyz98765       5 minutes ago    25MB
+      If someone wants version 1.0, they run:
+      docker run -p 8080:80 highway:1.0
+      If they want the latest 2.0, they run:
+      docker run -p 8080:80 highway:2.0
+      👉 This is how Docker tagging gives you semantic versioning of your app, just like software releases.
+      2. How to update the source code if it’s the same as the original
+      When you change your source code (say you edit an HTML file), the Docker image doesn’t magically update. You need to rebuild the image.
+      Example:
+      Edit your website files in ~/websites/Highway.
+      Rebuild:
+      docker build -t highway:1.1 .
+      Now you have a new image (highway:1.1) that contains the updated source.
+      The old one (highway:1.0) is still there, so you can roll back anytime.
+      🚀 Common practice
+      Use semantic tags (1.0, 1.1, 2.0) for releases.
+      Use :latest for your newest build (but avoid it in production, because it’s not predictable).
+      You can also use git commit hashes as tags for reproducibility:
+      docker build -t highway:$(git rev-parse --short HEAD) .
+      🔹 What docker tag does
+      The docker tag command does not create a new image.
+      It just creates a new label (alias) for an existing image ID.
+      Example:
+      docker build -t highway:1.0 .
+      Check your images:
+      docker images
+      REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+      highway      1.0     abcd1234       5 minutes ago    24MB
+      Now if you run:
+      docker tag highway:1.0 highway:latest
+      Check again:
+      docker images
+      REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+      highway      1.0     abcd1234       5 minutes ago    24MB
+      highway      latest  abcd1234       5 minutes ago    24MB
+      ➡️ Both tags point to the same underlying image ID (abcd1234).
+      🔹 How this helps with versioning
+      It allows you to:
+      Keep a versioned tag (e.g., highway:1.0).
+      Also have a moving tag (e.g., highway:latest) that always points to the most current version.
+      So if you rebuild:
+      docker build -t highway:2.0 .
+      docker tag highway:2.0 highway:latest
+      Now highway:latest points to 2.0, but 1.0 is still available if you need rollback.
+      🔹 Updating source code
+      docker tag itself does not update source code.
+      If you change your website files, you still need to:
+      Rebuild a new image with docker build.
+      Optionally docker tag it with a different label (like :latest, :prod, :staging, etc.).
+      ✅ So in short:
+      docker build -t → creates a new image (with your source code).
+      docker tag → just adds another name (alias) for an existing image.
+Docker Registries:
+   - This is a service that stores Docker images and allows you to share them.
+   - Popular registries include Docker Hub, Google Container Registry, and AWS Elastic Container Registry.
+   - You can push your images to a registry with:
+   ```
+   docker push my-image:1.0
+   ```
+   - And pull them down with:
+   ```
+   docker pull my-image:1.0
+   ```
+   - Used in CICD pipelines to automate the build and deployment process.
+Docker Hub:
+   - This is a popular public registry for Docker images.
+   - You can create a free account and host your images there.
+   - You can also find many pre-built images for popular software and frameworks.
+   - To push an image to Docker Hub, you first need to tag it with your Docker Hub username:
+   ```
+   docker tag my-image:1.0 myusername/my-image:1.0
+   ```
+   - Then log in to Docker Hub with:
+   ```
+   docker login
+   ```
+   - Finally, push the image with:
+   ```
+   docker push myusername/my-image:1.0
+   ```
+   - To pull an image from Docker Hub, you can use:
+   ```
+   docker pull myusername/my-image:1.0
+   ```
+   - It gives us the ability to store both private and public images.
+   - To keep your images secure, you can use private repositories.
+   - Public repositories are great for open-source projects.
+   - You can create a private repository on Docker Hub by selecting the "Private" option when creating a new repository.
+   - Private repositories require a paid Docker Hub plan.
+   - You get 1 private repository for free with a Docker Hub account.
+   - To push to my repo I run docker push njibrigthain100/brigthain:tagname
+   - Example to push is docker push njibrigthain100/brigthain:1.0
+   - To pull from my repo I run docker pull njibrigthain100/brigthain:tagname
+   - To login to Docker Hub, you run docker login
+   - To push images built using Dockerfile, you first need to build the image with:
+   ```
+   docker build -t njibrigthain100/brigthain:1.0 .
+   ```
+   - Then you can push it with:
+   ```
+   docker push njibrigthain100/brigthain:1.0
+   ```
+   - The name of the image is in the format `username/repo:tag`.
+   - This is because docker uses this format to uniquely identify images in the registry.
+   - And also how docker hub knows where to push the image.
+Pulling Images from Docker Registry:
+   - To pull an image from a Docker registry, you can use the `docker pull` command followed by the image name and tag.
+   ```
+   docker pull njibrigthain100/brigthain:1.0
+   ```
+Docker Inspect:
+   - This command allows you to view detailed information about Docker objects such as containers, images, volumes, and networks.
+   - You can use it to inspect the configuration, state, and metadata of these objects.
+   - For example, to inspect a container, you can run:
+   ```
+   docker inspect <container_id_or_name>
+   ```
+   - This will return a JSON object containing detailed information about the container, including its configuration, network settings, and resource usage.
+   - You can also use `docker inspect` to view information about images:
+   ```
+   docker inspect <image_name_or_id>
+   ```
+   - This will return information about the image, including its layers, size, and creation date.
+   - The output of `docker inspect` can be quite verbose, so you may want to use tools like `jq` to filter and format the JSON output for easier reading.
+   - For example, to get just the IP address of a container, you can run:
+   ```
+   docker inspect <container_id_or_name> | jq '.[0].NetworkSettings.IPAddress'
+   ```
+   - This is used for debugging and troubleshooting Docker objects.
+   - You can use it to gather information about the state and configuration of your containers and images.
+   - This can help you identify issues and optimize your Docker setup.
+   - You can also use it to monitor resource usage and performance metrics.
+Docker logs:
+   - This command allows you to view the logs generated by a container.
+   - You can use it to troubleshoot issues and monitor the behavior of your applications.
+   - For example, to view the logs of a running container, you can run:
+   ```
+   docker logs <container_id_or_name>
+   ```
+   - This will display the standard output and error streams of the container.
+   - You can also use the `-f` flag to follow the logs in real-time:
+   ```
+   docker logs -f <container_id_or_name>
+   ```
+   - This is useful for monitoring the logs as they are generated.
+   - You can combine it with other options like `--tail` to limit the number of lines displayed:
+   ```
+   docker logs --tail 100 <container_id_or_name>
+   ```
+Bash into containers:
+   - You can use the `docker exec` command to start a new Bash session inside a running container.
+   - For example, to bash into a container, you can run:
+   ```
+   docker exec -it <container_id_or_name> bash
+   ```
+   - This will give you an interactive Bash shell inside the container.
+   - You can then run commands as if you were logged into the container's operating system.
+   - This is useful for debugging and troubleshooting issues inside the container.
