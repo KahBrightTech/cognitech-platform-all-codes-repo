@@ -574,3 +574,63 @@ Bash into containers:
    - This will give you an interactive Bash shell inside the container.
    - You can then run commands as if you were logged into the container's operating system.
    - This is useful for debugging and troubleshooting issues inside the container.
+
+Docker Compose:
+   - You need to understand docker before you understand docker compose 
+   - Docker compose allows you to define and run multiple services and applications that have dependencies on each other.
+   - Docker Compose is a tool for defining and running multi-container Docker applications.
+   - You can define your application stack in a `docker-compose.yml` file.
+   - This file specifies the services, networks, and volumes required for your application.
+   - To start your application, you can run:
+   ```
+   docker-compose up
+   ```
+   - This will start all the services defined in your `docker-compose.yml` file.
+   - You can also use the `-d` flag to run the containers in detached mode:
+   ```
+   docker-compose up -d
+   ```
+   - To stop your application, you can run:
+   ```
+   docker-compose down
+   ```
+   - This will stop and remove all the containers defined in your `docker-compose.yml` file.
+   - Docker compose is built on top of docker engine
+   - To install docker compose on ubuntu you can use the following commands:
+   ```
+   sudo apt-get update
+   sudo apt-get install docker-compose
+   ```
+   - To verify the installation, you can run the following command:
+   ```
+   docker-compose --version
+   ```
+Running containers without docker compose:
+   - In this demo we will start 2 docker containers using docker commands 
+   - Create a docker network 
+   - Start MongoDB container 
+   - Start Mongo Express container
+   - To create a docker network you can use the following command:
+   ```
+   docker network create <network_name>
+   ```
+   - To list all the docker networks you can use the following command:
+   ```
+   docker network ls
+   ```
+   - The docker network is used to allow containers to communicate with each other.
+   - You can specify the network when starting a container using the `--network` flag:
+   ```
+   docker run --network <network_name> <image_name>
+   ```
+   - This will connect the container to the specified network.
+   - You can also connect an existing container to a network using the `docker network connect` command:
+   ```
+   docker network connect <network_name> <container_id_or_name>
+   ```
+   - This will connect the specified container to the specified network.
+   - To pull the latest mongo image you can use the following command:
+   ```
+   docker pull mongo
+   ```
+   
