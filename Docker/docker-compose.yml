@@ -1,0 +1,24 @@
+version: '3'                                    # Specifies Docker Compose file format version
+services:                                           # Defines all the containers/services to run
+  mongodb:                                          # Service name for MongoDB container
+    image: mongo                                    # Uses official MongoDB image from Docker Hub
+    restart: always                                 # Automatically restart container if it stops/crashes
+    environment:                                    # Sets environment variables inside the container
+      MONGO_INITDB_ROOT_USERNAME: admin            # Creates root user 'admin' when MongoDB initializes
+      MONGO_INITDB_ROOT_PASSWORD: test             # Sets password 'test' for the root user
+    ports:                                          # Maps host ports to container ports
+      - 27017:27017                                 # Maps host port 27017 to container port 27017 (MongoDB default)
+  mongo-express:                                   # Service name for Mongo Express web UI container
+    image: mongo-express                            # Uses official Mongo Express image from Docker Hub
+    restart: always                                 # Automatically restart container if it stops/crashes
+    depends_on:                                     # Wait for MongoDB to start before starting Mongo Express
+      - mongodb                                     # Ensures MongoDB container starts first
+    environment:                                    # Sets environment variables inside the container
+      ME_CONFIG_MONGODB_SERVER: mongodb            # Points to 'mongodb' service (container name for connection)
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin       # MongoDB admin username for authentication
+      ME_CONFIG_MONGODB_ADMINPASSWORD: test        # MongoDB admin password for authentication
+      ME_CONFIG_BASICAUTH_USERNAME: admin          # Username for web UI login authentication
+      ME_CONFIG_BASICAUTH_PASSWORD: test           # Password for web UI login authentication
+      ME_CONFIG_MONGODB_URL: mongodb://admin:test@mongodb:27017/  # Complete MongoDB connection string
+    ports:                                          # Maps host ports to container ports
+      - 8081:8081                                   # Maps host port 8081 to container port 8081 (Mongo Express default)

@@ -22,6 +22,8 @@
   - [🎯 Docker Best Practices](#-docker-best-practices)
   - [🏪 Docker Registries](#-docker-registries)
   - [🔧 Advanced Commands](#-advanced-commands)
+  - [🐙 Docker Compose](#-docker-compose)
+  - [🔒 Security Best Practices](#-security-best-practices)
   - [🩺 Troubleshooting Tips](#-troubleshooting-tips)
   - [📚 Summary](#-summary)
   - [🔗 Additional Resources](#-additional-resources)
@@ -998,6 +1000,801 @@ docker run my-image:latest
 **Key Points:**
 - It's a good practice to use semantic versioning for your images, so you can easily identify breaking changes and update your deployments accordingly
 - Always using latest can cause issues because latest is a moving target and can change over time
+- To avoid these issues, it's recommended to use specific version tags for your images in production environments
+- This ensures that your application is always using a known, tested version of the base image, reducing the risk of unexpected issues
+- You need to make sure that your application works correctly with the specific version of the base image you are using
+- It's also a good idea to regularly update your base images to incorporate security patches and performance improvements
+- This also helps you have full control over your image versions and reduces the risk of unexpected issues
+- Regularly updating your base images can help you take advantage of new features and improvements in the underlying operating system and libraries
+- However, it's important to test your applications thoroughly when updating base images, as changes in the base image can potentially introduce breaking changes or incompatibilities
+
+#### 🎯 **How tags help with versioning**
+
+Tags are just labels that point to a specific image. They let you manage different builds of the same project.
+
+**Example workflow:**
+```bash
+# First release
+docker build -t highway:1.0 .
+# Later you change the HTML/CSS/JS
+docker build -t highway:1.1 .
+# Another big change
+docker build -t highway:2.0 .
+
+# Now you have multiple versions of the highway image locally:
+docker images
+REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+highway      1.0     abcd1234       2 weeks ago      24MB
+highway      1.1     efgh5678       3 days ago       24MB
+highway      2.0     xyz98765       5 minutes ago    25MB
+
+# If someone wants version 1.0, they run:
+docker run -p 8080:80 highway:1.0
+# If they want the latest 2.0, they run:
+docker run -p 8080:80 highway:2.0
+```
+
+👉 This is how Docker tagging gives you semantic versioning of your app, just like software releases.
+
+#### 🔄 **How to update the source code**
+
+When you change your source code (say you edit an HTML file), the Docker image doesn't magically update. You need to rebuild the image.
+
+**Example:**
+```bash
+# Edit your website files in ~/websites/Highway.
+# Rebuild:
+docker build -t highway:1.1 .
+
+# Now you have a new image (highway:1.1) that contains the updated source.
+# The old one (highway:1.0) is still there, so you can roll back anytime.
+```
+
+#### 🚀 **Common practice**
+- Use semantic tags (1.0, 1.1, 2.0) for releases
+- Use :latest for your newest build (but avoid it in production, because it's not predictable)
+- You can also use git commit hashes as tags for reproducibility:
+  ```bash
+  docker build -t highway:$(git rev-parse --short HEAD) .
+  ```
+
+#### 🔹 **What docker tag does**
+The docker tag command does not create a new image. It just creates a new label (alias) for an existing image ID.
+
+**Example:**
+```bash
+docker build -t highway:1.0 .
+
+# Check your images:
+docker images
+REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+highway      1.0     abcd1234       5 minutes ago    24MB
+
+# Now if you run:
+docker tag highway:1.0 highway:latest
+
+# Check again:
+docker images
+REPOSITORY   TAG     IMAGE ID       CREATED          SIZE
+highway      1.0     abcd1234       5 minutes ago    24MB
+highway      latest  abcd1234       5 minutes ago    24MB
+```
+
+➡️ Both tags point to the same underlying image ID (abcd1234).
+
+#### 🔹 **How this helps with versioning**
+It allows you to:
+- Keep a versioned tag (e.g., highway:1.0)
+- Also have a moving tag (e.g., highway:latest) that always points to the most current version
+
+So if you rebuild:
+```bash
+docker build -t highway:2.0 .
+docker tag highway:2.0 highway:latest
+```
+
+Now highway:latest points to 2.0, but 1.0 is still available if you need rollback.
+
+#### 🔹 **Updating source code**
+- docker tag itself does not update source code
+- If you change your website files, you still need to:
+  - Rebuild a new image with docker build
+  - Optionally docker tag it with a different label (like :latest, :prod, :staging, etc.)
+
+✅ **In short:**
+- `docker build -t` → creates a new image (with your source code)
+- `docker tag` → just adds another name (alias) for an existing image
+
+---
+
+## 🏪 Docker Registries
+
+### 🌍 **What are Docker Registries?**
+
+Docker registries are centralized services that store and distribute Docker images:
+
+- **🏪 Image Storage**: Centralized repository for Docker images
+- **🔄 Distribution**: Share images across teams and environments  
+- **🔐 Access Control**: Public and private image repositories
+- **🚀 CI/CD Integration**: Automated build and deployment pipelines
+- **📊 Version Management**: Track different versions of your images
+
+### 🌐 **Popular Registry Services**
+
+| Registry | Type | Features |
+|----------|------|----------|
+| **Docker Hub** | Public/Private | Free public repos, 1 free private repo |
+| **AWS ECR** | Private | Integrated with AWS services |
+| **Google Container Registry** | Private | Integrated with GCP |
+| **Azure Container Registry** | Private | Integrated with Azure |
+| **Harbor** | Self-hosted | Open source, advanced security |
+
+### 🐳 **Docker Hub Usage**
+
+#### 🔑 **Authentication**
+```bash
+# Login to Docker Hub
+docker login
+
+# Login with specific username
+docker login -u your-username
+
+# Logout
+docker logout
+```
+
+#### 🏷️ **Image Naming Convention**
+```bash
+# Format: registry/username/repository:tag
+# Docker Hub: username/repository:tag
+# Example: njibrigthain100/brigthain:1.0
+```
+
+#### ⬆️ **Pushing Images**
+```bash
+# Step 1: Build image with proper naming
+docker build -t njibrigthain100/brigthain:1.0 .
+
+# Step 2: Push to registry
+docker push njibrigthain100/brigthain:1.0
+
+# Push multiple tags
+docker push njibrigthain100/brigthain:1.0
+docker push njibrigthain100/brigthain:latest
+```
+
+#### ⬇️ **Pulling Images**
+```bash
+# Pull specific version
+docker pull njibrigthain100/brigthain:1.0
+
+# Pull latest version
+docker pull njibrigthain100/brigthain:latest
+
+# Pull from different registry
+docker pull gcr.io/project-id/image:tag
+```
+
+### 🔒 **Private vs Public Repositories**
+
+#### 🌍 **Public Repositories**
+- **✅ Advantages**: Free, great for open source, easy sharing
+- **❌ Disadvantages**: Code visible to everyone
+- **🎯 Use Cases**: Open source projects, learning, tutorials
+
+#### 🔐 **Private Repositories**  
+- **✅ Advantages**: Code security, access control
+- **❌ Disadvantages**: May require paid plans
+- **🎯 Use Cases**: Commercial applications, proprietary code
+- **💰 Cost**: Docker Hub provides 1 free private repository
+
+### 🏗️ **Registry Best Practices**
+
+```bash
+# Use semantic versioning
+docker build -t myapp:1.2.3 .
+docker build -t myapp:1.2 .
+docker build -t myapp:1 .
+docker build -t myapp:latest .
+
+# Tag for different environments
+docker tag myapp:1.2.3 myapp:production
+docker tag myapp:1.2.3 myapp:staging
+
+# Include build metadata
+docker build -t myapp:1.2.3-$(git rev-parse --short HEAD) .
+```
+
+### 🚀 **CI/CD Integration**
+
+```yaml
+# Example GitHub Actions workflow
+name: Build and Push
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: username/app:latest
+```
+
+---
+
+## 🔧 Advanced Commands
+
+### 🔍 **Docker Inspect**
+
+The `docker inspect` command provides detailed information about Docker objects:
+
+```bash
+# Inspect a container
+docker inspect container_name
+
+# Inspect an image  
+docker inspect nginx:latest
+
+# Get specific information using format
+docker inspect --format='{{.NetworkSettings.IPAddress}}' container_name
+
+# Get multiple fields
+docker inspect --format='{{.Name}} {{.State.Status}}' container_name
+
+# Inspect multiple objects
+docker inspect container1 container2 image1
+```
+
+#### 📊 **Common Inspect Use Cases**
+
+```bash
+# Get container IP address
+docker inspect --format='{{.NetworkSettings.IPAddress}}' web-server
+
+# Check container status
+docker inspect --format='{{.State.Status}}' web-server
+
+# Get port mappings
+docker inspect --format='{{.NetworkSettings.Ports}}' web-server
+
+# Get environment variables
+docker inspect --format='{{.Config.Env}}' web-server
+
+# Get volume mounts
+docker inspect --format='{{.Mounts}}' web-server
+```
+
+### 📜 **Docker Logs**
+
+Monitor and troubleshoot containers using logs:
+
+```bash
+# View container logs
+docker logs container_name
+
+# Follow logs in real-time
+docker logs -f container_name
+
+# Show last 100 lines
+docker logs --tail 100 container_name
+
+# Show logs with timestamps
+docker logs -t container_name
+
+# Show logs since specific time
+docker logs --since 2023-01-15T10:30:00 container_name
+
+# Show logs until specific time
+docker logs --until 2023-01-15T11:00:00 container_name
+
+# Combine options
+docker logs -f --tail 50 --since 1h container_name
+```
+
+### 💻 **Accessing Container Shell**
+
+Execute commands inside running containers:
+
+```bash
+# Start interactive bash session
+docker exec -it container_name bash
+
+# Alternative shells
+docker exec -it container_name sh      # Alpine containers
+docker exec -it container_name zsh     # If zsh is installed
+docker exec -it container_name /bin/sh # Fallback
+
+# Execute single command
+docker exec container_name ls -la /app
+
+# Execute as specific user
+docker exec -u root -it container_name bash
+
+# Execute with environment variables
+docker exec -e VAR_NAME=value -it container_name bash
+```
+
+#### 🛠️ **Common Container Operations**
+
+```bash
+# Install packages (temporary)
+docker exec -it container_name apt update && apt install -y vim
+
+# Check running processes
+docker exec container_name ps aux
+
+# View files
+docker exec container_name cat /app/config.json
+
+# Check network connectivity
+docker exec container_name ping google.com
+
+# Monitor resources
+docker exec container_name top
+```
+
+---
+
+## 🐙 Docker Compose
+
+### 🧩 **What is Docker Compose?**
+
+Docker Compose is a powerful tool for defining and running multi-container Docker applications:
+
+- **📝 Configuration as Code**: Define your entire application stack in a `docker-compose.yml` file
+- **🔗 Service Dependencies**: Manage relationships between containers
+- **🌐 Networking**: Automatic network creation for container communication
+- **📊 Volume Management**: Shared storage between containers
+- **🚀 Orchestration**: Start, stop, and scale multiple containers with single commands
+- **🏗️ Built on Docker Engine**: Extends Docker's capabilities for complex applications
+
+> 💡 **Note**: You need to understand Docker before you understand Docker Compose!
+
+### 📥 **Installing Docker Compose**
+
+#### 🐧 **Ubuntu/Debian Installation**
+```bash
+# Update package index
+sudo apt-get update
+
+# Install Docker Compose
+sudo apt-get install docker-compose
+
+# Verify installation
+docker-compose --version
+
+# Alternative: Install via pip
+sudo pip install docker-compose
+```
+
+#### 🔄 **Alternative Installation Methods**
+```bash
+# Download binary directly
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+# Make it executable
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Verify
+docker-compose --version
+```
+
+### 🔄 **Running Containers WITHOUT Docker Compose**
+
+Before we dive into Compose, let's see how complex multi-container setups become without it:
+
+#### 🗃️ **Example: MongoDB + Mongo Express Setup**
+
+```bash
+# Step 1: Create a docker network
+docker network create mongo-network
+
+# Step 2: Start MongoDB container
+docker run -d \
+  --name mongodb \
+  --network mongo-network \
+  -p 27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=admin \
+  -e MONGO_INITDB_ROOT_PASSWORD=test \
+  mongo:latest
+
+# Step 3: Start Mongo Express container
+docker run -d \
+  --name mongo-express \
+  --network mongo-network \
+  -p 8081:8081 \
+  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
+  -e ME_CONFIG_MONGODB_ADMINPASSWORD=test \
+  -e ME_CONFIG_MONGODB_SERVER=mongodb \
+  mongo-express:latest
+
+# Check logs for credentials
+docker logs mongo-express
+```
+
+#### 🌐 **Docker Network Commands**
+```bash
+# Create a custom network
+docker network create my-network
+
+# List all networks
+docker network ls
+
+# Connect container to network
+docker network connect my-network container_name
+
+# Disconnect container from network
+docker network disconnect my-network container_name
+
+# Inspect network details
+docker network inspect my-network
+```
+
+### 📄 **Docker Compose File Structure**
+
+Here's the same MongoDB + Mongo Express setup using Docker Compose:
+
+#### 🔧 **Basic docker-compose.yml**
+```yaml
+version: '3'
+services:
+  mongodb:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: test
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: test
+    ports:
+      - 8081:8081
+    depends_on:
+      - mongodb
+```
+
+#### ✨ **Benefits of Docker Compose**
+- **📝 Single Configuration**: All configurations in one place
+- **🔄 Reproducible**: Same setup across different environments
+- **🌐 Automatic Networking**: Containers can communicate by service name
+- **📊 Unified Management**: Start/stop entire application stack with one command
+- **🏷️ Consistent Naming**: Uses directory name as prefix for container names
+
+### 🚀 **Docker Compose Commands**
+
+#### 🎬 **Starting Services**
+```bash
+# Start all services in detached mode
+docker-compose up -d
+
+# Start specific services
+docker-compose up mongodb
+
+# Start with build (if using Dockerfile)
+docker-compose up --build
+
+# Scale specific services
+docker-compose up --scale web=3
+
+# Start with custom project name
+docker-compose --project-name myproject up -d
+```
+
+#### 🛑 **Stopping Services**
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+
+# Stop and remove images
+docker-compose down --rmi all
+
+# Stop specific service
+docker-compose stop mongodb
+
+# Start stopped services
+docker-compose start
+
+# Restart services
+docker-compose restart
+```
+
+#### 📊 **Monitoring Services**
+```bash
+# View logs from all services
+docker-compose logs
+
+# Follow logs in real-time
+docker-compose logs -f
+
+# View logs from specific service
+docker-compose logs mongodb
+
+# View service status
+docker-compose ps
+
+# View resource usage
+docker-compose top
+```
+
+### 🔧 **Advanced Docker Compose Features**
+
+#### 📦 **Custom Build Configuration**
+```yaml
+version: '3.8'
+services:
+  web-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - database
+
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+```
+
+#### 🌍 **Environment Variables in Docker Compose**
+
+You can define variables in the `docker-compose.yml` file using the `${VARIABLE_NAME}` syntax. Variables can be set in an `.env` file or in the shell environment.
+
+**Create `.env` file:**
+```bash
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=secretpassword
+ME_CONFIG_BASICAUTH_USERNAME=admin
+ME_CONFIG_BASICAUTH_PASSWORD=webpassword
+```
+
+**Updated docker-compose.yml:**
+```yaml
+version: '3.8'
+services:
+  mongodb:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+```
+
+#### 🔗 **Service Dependencies**
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    depends_on:
+      - database
+      - cache
+    
+  database:
+    image: postgres:13
+    
+  cache:
+    image: redis:alpine
+```
+
+#### 📊 **Health Checks**
+```yaml
+version: '3.8'
+services:
+  web:
+    image: nginx
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+```
+
+### 🎯 **Real-World Application Example**
+
+Here's a complete example with a web application connecting to MongoDB:
+
+```yaml
+version: '3.8'
+
+services:
+  # Web Application
+  web-app:
+    build: 
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: nodejs-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/myapp?authSource=admin
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    volumes:
+      - ./app/logs:/app/logs
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:5
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: myapp
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  # MongoDB Admin UI
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-admin
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
+
+networks:
+  default:
+    name: myapp-network
+```
+
+### 📝 **Docker Compose Best Practices**
+
+#### ✅ **Do's**
+- Use explicit image tags instead of `latest`
+- Define health checks for services
+- Use named volumes for persistent data
+- Set restart policies appropriately
+- Use environment files for sensitive data
+- Name your containers meaningfully
+
+#### ❌ **Don'ts**  
+- Don't store secrets in the compose file
+- Don't run containers as root when unnecessary
+- Don't ignore resource limits
+- Don't forget to use `.dockerignore`
+
+#### 🔧 **Production-Ready Configuration**
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: myapp:1.2.3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+This allows you to easily change configuration values without modifying the `docker-compose.yml` file directly, making your setup more flexible and secure.
+
+### 🎯 **Working with Real Applications**
+
+When working with actual applications (like the example from https://gitlab.com/twn-youtube/docker-compose-crash-course.git):
+
+1. **📁 Copy the docker-compose.yml** into your app code directory
+2. **⚠️ Be careful with service names** - mongo-express expects the MongoDB service to be named `mongo` not `mongodb`
+3. **🔄 Update configurations** accordingly in your docker-compose.yml file
+4. **🚀 Use project names** to avoid conflicts between different projects
+
+**Important Notes:**
+- **🏷️ Container Naming**: Docker compose always uses the name of the directory containing the `docker-compose.yml` file as the prefix for container names
+- **📜 Mixed Logs**: The log for both containers can be viewed using `docker-compose logs` - logs are mixed together so you can see the logs for both containers in one place
+- **⏹️ Stopping**: When you stop a container with `docker-compose down`, it stops and removes all containers defined in the `docker-compose.yml` file
+- **💾 Data Persistence**: Containers are ephemeral unless you use volumes to persist data - stopping the container does not delete the data stored in the container
+- **📋 File Transfers**: You can use the `docker cp` command to copy files between the host and the container
+
+---
+
+## 🔒 **Security Best Practices**
+
+### 👤 **Use Non-Root Users**
+```dockerfile
+FROM node:18-alpine
+
+# Create app directory
+WORKDIR /app
+
+# Install dependencies as root
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Create and switch to non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy app source
+COPY --chown=nodejs:nodejs . .
+
+# Switch to non-root user
+USER nodejs
+
+CMD ["node", "app.js"]
+```
 - To avoid these issues, it's recommended to use specific version tags for your images in production environments
 - This ensures that your application is always using a known, tested version of the base image, reducing the risk of unexpected issues
 - You need to make sure that your application works correctly with the specific version of the base image you are using

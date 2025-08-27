@@ -633,4 +633,131 @@ Running containers without docker compose:
    ```
    docker pull mongo
    ```
-   
+   - to run a container using the mongo image you can use the following command:
+   ```
+   docker run --name mongodb --network <network_name> -d mongo
+   ```
+   - you can also pass the username and password to the mongo container using the following command:
+   ```
+   docker run --name mongodb --network <network_name> -d -e MONGO_INITDB_ROOT_USERNAME=<username> -e MONGO_INITDB_ROOT_PASSWORD=<password> mongo
+   ```
+   - example docker run -d -p 27017:27017 --name mongodb --network mongo-network -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=test mongo:latest
+   - mongo express is a ui for mongodb that runs on port 8080 and to run mongo express you can use the following command:
+   ```
+   - docker run --name mongo-express --network <network_name> -d -e ME_CONFIG_MONGODB_SERVER=mongodb -e ME_CONFIG_BASICAUTH_USERNAME=<username> -e ME_CONFIG_BASICAUTH_PASSWORD=<password> -p 8080:8081 mongo-express
+   ```
+   - ex docker run -d --network mongo-network -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin -e ME_CONFIG_MONGODB_ADMINPASSWORD=test -e ME_CONFIG_MONGODB_SERVER=mongodb -p 8081:8081 --name mongo-express mongo-express:latest
+   - you can find the credentials for the ui in the logs so running
+   ```
+   - docker logs mongo-express
+   ```
+   - this will show you the logs for the mongo express container and you can find the credentials in the logs.
+   - This is an example with only a 2 tier application. So what happens if we want to scale it up?
+   - We can use docker-compose to define and run a multi-container application.
+   - Here is an example `docker-compose.yml` file for our application:
+   ```
+   version: '3'
+   services:
+     mongodb:
+       image: mongo
+       restart: always
+       environment:
+         MONGO_INITDB_ROOT_USERNAME: admin
+         MONGO_INITDB_ROOT_PASSWORD: test
+       ports:
+         - 27017:27017
+     mongo-express:
+       image: mongo-express
+       restart: always
+       environment:
+         ME_CONFIG_MONGODB_SERVER: mongodb
+         ME_CONFIG_BASICAUTH_USERNAME: admin
+         ME_CONFIG_BASICAUTH_PASSWORD: test
+       ports:
+         - 8081:8081
+   ```
+   - To start the application, you can run:
+   ```
+   docker-compose up -d
+   ```
+   - This will start all the services defined in the `docker-compose.yml` file.
+   - With docker compose you define all your configurations in one single place
+   - So all the commands we ran above can be replaced with the `docker-compose.yml` file.
+   - The file starts with the version of the docker-compose file format.
+   - Then you define the services that make up your application.
+   - Each service can have its own configuration options, such as the image to use, environment variables, ports to expose, and more.
+   - By default docker compose runs your containers in a single network, allowing them to communicate with each other easily.
+   - To run docker compose file you can use the following command:
+   ```
+   docker-compose up -d
+   ```
+   - Docker compose always uses the name of the directory containing the `docker-compose.yml` file as the prefix for the container names.
+   - The log for both containers can be viewed using the following command:
+   ```
+   docker-compose logs
+   ```
+   - The logs are also mixed together so you can see the logs for both containers in one place.
+   - When one application has a dependency on another application, you can use the `depends_on` option to specify the dependency.
+   - This specifies that the `mongo-express` service depends on the `mongodb` service.
+   - To stop the application, you can run:
+   ```
+   docker-compose down
+   ```
+   - This will stop and remove all the containers defined in the `docker-compose.yml` file.
+   - you can also use docker stop <container_name> to stop a specific container.
+   - To remove all stopped containers, you can run:
+   ```
+   docker container prune
+   ```
+   - You can stop all the containers using the command docker-compose -f <docker-compose-file> stop
+   ```
+   - To start all the containers again, you can use the command:
+   ```
+   docker-compose -f <docker-compose-file> start
+   ```
+   - This will start all stopped containers defined in the specified `docker-compose.yml` file.
+   - This will remove all stopped containers from your system.
+   - Containers are ephemeral unless you use volumes to persist data.
+   - Stopping the container does not delete the data stored in the container.
+   - You can use the `docker cp` command to copy files between the host and the container.
+   - Now its time to add a web application that connects to the mongodb database.
+   - The app code was downloaded from https://gitlab.com/twn-youtube/docker-compose-crash-course.git
+   - It contained a dockerfile which was used to build the javascript application.
+   - Copy the docker compose into the app code directory called docker-crash-course
+   - Be careful with the mongodb service name as mongo-express expects the name to be mongo and not mongodb so creating it with that name will warrant you to update the mongo-express configuration accordingly.
+   - Update the mongo-express configuration in the docker-compose.yml file to use the correct mongodb service name.
+   - you can add the flag --project-name to specify a custom project name for your docker compose application.
+   - This can be useful if you are working on multiple projects and want to avoid naming conflicts.
+   - To use the flag, simply run the following command:
+   ```
+   docker-compose --project-name myproject up -d
+   ```
+   - This will set the project name to "myproject" and all containers will be prefixed with this name.
+Variables in docker compose:
+   - You can define variables in the `docker-compose.yml` file using the `${VARIABLE_NAME}` syntax.
+   - Variables can be set in an `.env` file or in the shell environment.
+   - This allows you to easily change configuration values without modifying the `docker-compose.yml` file directly.
+   - For example, you can define a variable for the MongoDB username and password:
+   ```
+   version: '3'
+   services:
+     mongodb:
+       image: mongo
+       restart: always
+       environment:
+         MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+         MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+       ports:
+         - 27017:27017
+     mongo-express:
+       image: mongo-express
+       restart: always
+       environment:
+         ME_CONFIG_MONGODB_SERVER: mongodb
+         ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+         ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+       ports:
+         - 8081:8081
+   ```  
+Docker image stored to a private repository:
+   - 
