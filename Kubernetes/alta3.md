@@ -7,10 +7,10 @@ Containers are:
     4. Can be easily scaled
     5. Easy to tear down and rebuild
     6. works thesame way no matter where they are deployed
-Problems with running containers as we are: 
+Problems with running containers as we are:
     1. Host machine runs out of resources
-    2. containers die and get ignored 
-    3. host machine goes down taking everything with it  
+    2. containers die and get ignored
+    3. host machine goes down taking everything with it
 Kubernetes solves these problems by:
     1. Kubernetes containers are placed in kubernetes objects called pods which are wrappers placed around the container. kubernetes manages pods not containers so by putting them together in one unit makes it easy to control
     2. Kubernetes containers need to draw their resources in a virtual machine which are called nodes. you can add multiple nodes to thesame environment. When you do that you end up exponentially increasing the available resources for your containers.
@@ -18,10 +18,10 @@ Kubernetes solves these problems by:
     4. There are 2 flavors of nodes. One is called the master node (controller node) and the other is called the worker node. The master node is responsible for managing the cluster and the worker nodes are responsible for running the containers. The master node runs a component called the kube-apiserver which is the main entry point for all kubernetes commands. The kube-apiserver communicates with the other components of the master node to manage the cluster. The worker nodes run a component called the kubelet which is responsible for communicating with the master node and managing the pods on the worker node. Each worker node can run one or multiple pods.
     5. The master node also runs a component called the etcd which is a distributed key-value store that stores all the configuration data for the cluster. The etcd is responsible for maintaining the state of the cluster and ensuring that all the nodes are in sync.
 
-What is happening under the hood in kubernetes: 
+What is happening under the hood in kubernetes:
     1. kubectl is the cli tool that will be installed on your local machine to interact with the kubernetes cluster. When you run a kubectl command it communicates with the kube-apiserver on the master node to perform the requested action.
     2. The kube-apiserver then communicates with the other components of the master node
-    3. A kube config file is a document that contains the information needed to connect to a kubernetes cluster. It typically includes the cluster's API server endpoint, authentication information, and other settings. an example is 
+    3. A kube config file is a document that contains the information needed to connect to a kubernetes cluster. It typically includes the cluster's API server endpoint, authentication information, and other settings. an example is
     apiVersion: v1
     clusters:
       - cluster:
@@ -29,12 +29,42 @@ What is happening under the hood in kubernetes:
           certificate-authority: <PATH_TO_CA_CERTIFICATE>
         name: <CLUSTER_NAME>
     4. The api server is what will be returning the information to kubectl when you run a command. The api server is the main entry point for all kubernetes commands and it communicates with the other components of the master node to manage the cluster.
-    5. It also reaches out to the other nodes that are part of our cluster to get information about the pods that are running on those nodes. 
+    5. It also reaches out to the other nodes that are part of our cluster to get information about the pods that are running on those nodes.
     6. It also talks to etcd to store and retrieve configuration data for the cluster. The etcd is a distributed key-value store that stores all the configuration data for the cluster. The etcd is responsible for maintaining the state of the cluster and ensuring that all the nodes are in sync. etcd is third party tool that kubernetes uses to store its data. Be very respectful of etcd as it is the brain of the cluster. If etcd goes down the entire cluster goes down.
     7. The scheduler is responsible for scheduling pods on the worker nodes. The scheduler looks at the available resources on each node and decides which node is best suited to run the pod. The scheduler also takes into account any constraints that are specified in the pod's configuration, such as node affinity or taints and tolerations.
     8. The controller manager is responsible for managing the various controllers that are running in the cluster. Controllers are responsible for ensuring that the desired state of the cluster is maintained. For example, if a pod is deleted, the replication controller will create a new pod to replace it. The controller manager also manages other controllers such as the node controller, which is responsible for monitoring the status of the nodes in the cluster, and the endpoint controller, which is responsible for managing the endpoints for services.
+    The controller manager (and therefore all the controllers it runs) is part of the control plane, which typically resides on the master node(s) in a Kubernetes cluster.
+      🧠 Kubernetes Node Types
+      There are two broad categories of nodes:
+      Control Plane Node(s) (sometimes called master nodes)
+      → Manage the cluster — they don’t run user workloads.
+      Worker Nodes
+      → Run your application Pods.
+      ⚙️ Control Plane Components (on the Master Node)
+      Component	Description
+      kube-apiserver	The front end for the Kubernetes control plane — all requests go through this API.
+      etcd	The key-value store that holds all cluster data (the single source of truth).
+      kube-scheduler	Decides which node a new Pod should run on.
+      kube-controller-manager	Runs controllers that maintain the desired state of the cluster.
+      cloud-controller-manager (optional)	Handles interactions with the underlying cloud provider (e.g., AWS, Azure).
+      🧩 Where Controllers Fit
+      **Each controller runs inside the kube-controller-manager process.**
+      The controller manager itself runs on the master/control plane node.
+      It communicates with the API server, not directly with nodes or pods.
+      When it detects a difference between the desired and current state, it updates the API server — and then other components (like the scheduler or kubelet) act on those changes.
+      🔁 Example Flow
+      You create a Deployment (desired state = 3 replicas).
+      The Deployment controller (running in the controller manager on the master) notices only 1 Pod exists.
+      It asks the API server to create 2 more Pods.
+      The scheduler assigns those Pods to worker nodes.
+      The kubelet on each worker node runs them.
+      🧭 Summary
+      Item	Location	Purpose
+      Controller Manager	Master node (control plane)	Runs controllers that keep cluster state in sync
+      Controllers	Inside the controller manager	Each maintains a specific aspect (e.g., Pods, Nodes, Volumes)
+      Worker Nodes	Run workloads (Pods)	Execute what the control plane instructs
     ![pic1](./screenshots/pic1.png)
-    9. Kubelet: This is present on every single node in the cluster. The kubelet is responsible for communicating with the master node and managing the pods on the worker node. The kubelet ensures that the containers in the pod are running and healthy. If a container dies, the kubelet will restart it. The kubelet also reports the status of the pods to the master node. This is the eyes and the ears of the nodes. All instructions coming from the controller node go through the kubelet. The kubelet is responsible for ensuring that the desired state of the pod is maintained. If a pod is deleted, the kubelet will ensure that a new pod is created to replace it. 
+    9. Kubelet: This is present on every single node in the cluster. The kubelet is responsible for communicating with the master node and managing the pods on the worker node. The kubelet ensures that the containers in the pod are running and healthy. If a container dies, the kubelet will restart it. The kubelet also reports the status of the pods to the master node. This is the eyes and the ears of the nodes. All instructions coming from the controller node go through the kubelet. The kubelet is responsible for ensuring that the desired state of the pod is maintained. If a pod is deleted, the kubelet will ensure that a new pod is created to replace it.
     10. Containers runtime: This is the software that is responsible for running the containers. Kubernetes supports several different container runtimes, including Docker, containerd, and CRI-O. The container runtime is responsible for pulling the container image from a registry, creating the container, and starting the container. The container runtime also monitors the health of the container and reports the status to the kubelet.
      ![pic2](./screenshots/pic2.png)
     11. There are many types of apis in kubernetes. The most common are:
@@ -57,7 +87,7 @@ Kubernetes cli commands:
     4. kubectl delete: This command is used to delete resources from the cluster. The syntax for this command is kubectl delete <resource_type> <resource_name>. For example, to delete a specific pod, you would run kubectl delete pod <pod_name>. you can also delete the mainfest file by running kubectl delete -f <file_name>.
     5. kubectl logs: This command is used to retrieve the logs from a specific pod. The syntax for this command is kubectl logs <pod_name>. For example, to get the logs from a specific pod, you would run kubectl logs <pod_name>.
     6. kubectl namespace: This command is used to manage namespaces in the cluster. The syntax for this command is kubectl get namespaces to get a list of all namespaces in the cluster, kubectl create namespace <namespace_name> to create a new namespace, and kubectl delete namespace <namespace_name> to delete a specific namespace. When creating objects if you dont specify where the object is to go it will go to a default location. Command to see pods running in a particular namespace is kubectl get pods -n <namespace_name>. Also deleteing the pods in a particular namespace is kubectl delete pod <pod_name> -n <namespace_name>.
-    7. kubectl exec: This command is used to execute a command inside a specific pod. The syntax for this command is kubectl exec -it <pod_name> -- <command>. For example, to open a bash shell inside a specific pod, you would run kubectl exec -it <pod_name> -- /bin/bash.
+    7. kubectl exec: This command is used to execute a command inside a specific pod. The syntax for this command is kubectl exec -it <pod_name> -- `<command>`. For example, to open a bash shell inside a specific pod, you would run kubectl exec -it <pod_name> -- /bin/bash.
     8. kubectl port-forward: This command is used to forward a port from a specific pod to your local machine. The syntax for this command is kubectl port-forward <pod_name> <local_port>:<pod_port>. For example, to forward port 8080 from a specific pod to your local machine, you would run kubectl port-forward <pod_name> 8080:80.
 
 Resource quotas:
