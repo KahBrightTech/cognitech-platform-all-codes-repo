@@ -1,13 +1,7 @@
 # Kubernetes beginners to experts - Abishek's Notes
-
-<details>
-<summary><h2>📚 Docker vs Kubernetes Fundamentals</h2></summary>
-
-### What is the difference between Docker and Kubernetes?
-
-Docker is a containers platform that allows you to create, deploy, and run applications in containers. Kubernetes is a container orchestration platform that automates the deployment, scaling, and management of containerized applications.
-
-Kubernetes is a container orchestration tool that can work with different container runtimes, including Docker.
+### Difference between Docker and Kubernetes?
+**Docker** is a containers platform that allows you to create, deploy, and run applications in containers. Kubernetes is a container orchestration platform that automates the deployment, scaling, and management of containerized applications.
+**Kubernetes** is a container orchestration tool that can work with different container runtimes, including Docker.
 
 **What does it mean to be a container orchestration tool?**
 Container orchestration tools like Kubernetes manage the lifecycle of containers, including deployment, scaling, networking, and monitoring. They help ensure that containers are running as expected and can handle failures and updates seamlessly.
