@@ -4,6 +4,7 @@
 <summary><h2>📚 Docker vs Kubernetes Fundamentals</h2></summary>
 
 ### What is the difference between Docker and Kubernetes?
+
 Docker is a containers platform that allows you to create, deploy, and run applications in containers. Kubernetes is a container orchestration platform that automates the deployment, scaling, and management of containerized applications.
 
 Kubernetes is a container orchestration tool that can work with different container runtimes, including Docker.
@@ -12,6 +13,7 @@ Kubernetes is a container orchestration tool that can work with different contai
 Container orchestration tools like Kubernetes manage the lifecycle of containers, including deployment, scaling, networking, and monitoring. They help ensure that containers are running as expected and can handle failures and updates seamlessly.
 
 ### 🔄 Container Nature
+
 **Containers are ephemeral in nature** meaning they are short-lived and can be created and destroyed quickly.
 
 ### ⚠️ Problems with Docker Alone
@@ -34,10 +36,12 @@ Container orchestration tools like Kubernetes manage the lifecycle of containers
 ### 🏗️ Kubernetes Architecture
 
 #### Why "k8s"?
+
 The word Kubernetes has 10 letters: K + u b e r n e t e s.
 The abbreviation "k8s" replaces the 8 letters between the first and last letter with the number 8.
 
 Kubernetes has the **control plane** and the **data plane**.
+
 #### 🎛️ Control Plane Components
 
 - **API Server**: The API server is the front-end of the Kubernetes control plane. It exposes the Kubernetes API and serves as the main entry point for all administrative tasks. It processes RESTful requests, validates them, and updates the corresponding objects in the etcd datastore.
@@ -216,6 +220,7 @@ The data plane consists of worker nodes that run the containerized applications.
 ### Key Responsibilities:
 
 #### Control Plane Components:
+
 - **API Server**: Central hub for all cluster communication
 - **etcd**: Persistent storage for all cluster data
 - **Scheduler**: Intelligent pod placement decisions
@@ -223,9 +228,42 @@ The data plane consists of worker nodes that run the containerized applications.
 - **Cloud Controller Manager**: Cloud-specific resource management
 
 #### Data Plane Components:
+
 - **Kubelet**: Node agent managing pod lifecycle
 - **Kube-proxy**: Network proxy for service communication
 - **Container Runtime**: Executes and manages containers
 - **Pods**: Smallest deployable units containing containers
+  stopped at the 1:00:14 mark
 
-</details>
+### Installing Kubernetes Locally with Minikube:
+
+#### We will be using docker desktop as the driver. Follow the steps below to install docketr desktop and minikube.
+
+1. **Install Docker Desktop**:
+   - Download and install Docker Desktop from the [official Docker website](https://www.docker.com/products/docker-desktop).
+   - Follow the installation instructions for your operating system (Windows, macOS, or Linux).
+   - Once installed, ensure Docker Desktop is running and properly configured.
+2. **Install Minikube**:
+   - Follow the instructions on the [Minikube installation page](https://minikube.sigs.k8s.io/docs/start/) to install Minikube on your local machine.
+3. **Start Minikube**:
+   - Open a terminal and run the command:
+     ```bash
+        minikube start --driver=docker
+     ```
+4. **Stop Minikube**:
+   - To stop the Minikube cluster, run the command:
+     ```bash
+        minikube stop
+     ```
+5. **Verify Installation**:
+   - After starting Minikube, you can verify that your Kubernetes cluster is running by executing:
+     ```bash
+        kubectl get nodes
+     ```
+   - This command should display the status of the nodes in your Minikube cluster.
+6. **Terminate Minikube**:
+   - If you want to completely remove the Minikube cluster, you can run:
+     ```bash
+        minikube delete
+     ```
+
