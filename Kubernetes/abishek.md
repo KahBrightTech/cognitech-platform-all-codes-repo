@@ -376,3 +376,8 @@ spec:
    ```bash
    kubectl get replicasets or kubectl get rs
    ```
+### Kubernetes Services:
+ - In Kubernetes, a service is an abstraction that defines a logical set of pods and a policy by which to access them. Services provide a stable IP address and DNS name for a set of pods, allowing other components in the cluster to communicate with them without needing to know their individual IP addresses.
+ - There are several types of services in Kubernetes, including ClusterIP, NodePort, LoadBalancer, and ExternalName. Each type of service has its own use case and configuration options.
+ - Here is an example yaml file to create a ClusterIP service for the nginx deployment we created earlier.
+```yaml
