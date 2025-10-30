@@ -230,9 +230,8 @@ The data plane consists of worker nodes that run the containerized applications.
   stopped at the 1:00:14 mark
 
 ### Installing Kubernetes Locally with Minikube:
-
-#### We will be using docker desktop as the driver. Follow the steps below to install docketr desktop and minikube.
-
+   - Minikube is a command line tool that allows you to run a **single-node Kubernetes cluster** on your local machine. It is a great way to learn and experiment with Kubernetes without needing a full-blown cluster.
+#### We will be using docker desktop as the driver. Follow the steps below to install docker desktop and minikube.
 1. **Install Docker Desktop**:
    - Download and install Docker Desktop from the [official Docker website](https://www.docker.com/products/docker-desktop).
    - Follow the installation instructions for your operating system (Windows, macOS, or Linux).
@@ -260,4 +259,120 @@ The data plane consists of worker nodes that run the containerized applications.
      ```bash
         minikube delete
      ```
-
+### Deploying your first application on Minikube:
+ - In kubernetes the lowest level of deployment is a pod. A pod can have one or more containers inside it. To deploy an application, we first create a pod using a yaml file. Here is an example yaml file to create a pod with a single nginx container.
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+ Why cant you deploy the app as a container:
+   - A pod is a definition of how to run a container. It provides additional features such as networking, storage, and resource management that are not available when running a container directly. Pods also allow for better scalability and management of containerized applications in a Kubernetes environment. All kubernetes deployments are done through yaml,files and are declarative in nature. The pod typically runs one container but there are scenarios where multiple containers are needed inside a pod. Putting a group of containers in a single pod will use shared networking, shared storage between the 2 containers. Kubernetes allocates a cluster ip address to the pod and not the container. Hence all containers inside a pod share the same ip address and port space. kube proxy is the component that generates the clouster ip address for the pod.
+   - With kind you can create hundreds of clusters very easily. Kind uses docker containers as nodes. Hence you need to have docker installed on your machine to use kind.
+   - To install kind follow the instructions on the official kind website: https://kind.sigs.k8s.io/docs/user/quick-start/
+#### Installing your first pod:
+1. Save the above yaml file as `nginx-pod.yaml`.
+2. Open a terminal and navigate to the directory where the `nginx-pod.yaml` file is saved.
+3. Run the following command to create the pod:
+   ```bash
+   kubectl apply -f nginx-pod.yaml or kubectl create -f nginx-pod.yaml
+   ```
+4. Verify that the pod is running by executing:
+   ```bash
+   kubectl get pods or kubectl get pods -o wide
+   ```
+5. You should see the `nginx-pod` listed with a status of `Running`.
+6. To access the Nginx pod, you can use the following command:
+   ```bash
+   kubectl port-forward nginx-pod 8080:80
+   ```
+   This command will forward port 8080 on your local machine to port 80 on the Nginx pod.
+7. Accessing the Nginx Pod:
+   ```bash
+   curl http://localhost:8080
+   ```
+8. You should see the default Nginx welcome page.
+9. To login to the Nginx pod and explore its file system, run:
+   ```bash
+   kubectl exec -it nginx-pod -- /bin/bash
+   ```
+10. Minikube ssh command:
+   - You can also ssh into the minikube node using the command:
+   ```bash
+   minikube ssh
+   ```
+   - This will give you access to the minikube virtual machine where you can explore the Kubernetes components and configurations.
+- The pod.yaml file is a specification of how your docker container should run inside a pod. You can specify various parameters such as resource limits, environment variables, volume mounts, and more in the pod.yaml file to customize the behavior of your container within the pod.
+11. To vierw the logs of the nginx pod, run:
+   ```bash
+   kubectl logs nginx-pod
+   ```
+12. You can also use the `kubectl describe` command to get detailed information about the pod:
+   ```bash
+   kubectl describe pod nginx-pod
+   ```
+### Managing autoscaling and autohealing with Kubernetes
+ - Kubernetes provides built-in support for autoscaling and autohealing of applications running in pods. Autoscaling allows you to automatically adjust the number of pod replicas based on resource utilization or custom metrics, while autohealing ensures that failed pods are automatically replaced to maintain the desired state of the application.
+ - Kubernetes uses **deployments** to manage the lifecycle of pods. A deployment is a higher-level abstraction that defines the desired state of a set of pods and provides features such as rolling updates, scaling, and self-healing. The deployment acts as a wrapper around the pod definition and provides additional functionality for managing the pods. 
+#### Kubernetes Deployments: 
+- What is the difference between a container a pod and a deployment?
+   - A **container** is a lightweight, standalone executable package that includes everything needed to run a piece of software, including the code, runtime, libraries, and system tools. Containers are isolated from each other and the host system, allowing for consistent and reproducible environments.
+   - A **pod** is the smallest deployable unit in Kubernetes and represents a single instance of a running process in a cluster. A pod can contain one or more containers that share the same network namespace and storage volumes. Pods are ephemeral and can be created, destroyed, and recreated as needed. Pods are not capable of autoscaling or self-healing on their own.
+   - A **deployment** is a higher-level abstraction in Kubernetes that manages a set of pods. It defines the desired state of the application, including the number of replicas (pods) to run, the container image to use, and other configuration details. Deployments provide features such as rolling updates, scaling, and self-healing to ensure that the application remains available and responsive. Kubernetes suggest not to create opds directly but do it through deployments., Deployments create replica sets which in turn create pods.  replica sets ensure that the desired number of pod replicas are always running. This is how apps achieve zero downtime and high availability. Replica sets are kubernetes controllers that monitor the state of pods and ensure that the desired number of replicas are always running. If a pod fails or is deleted, the replica set will automatically create a new pod to replace it.
+   - Here is an example yaml file to create a deployment with 3 replicas of an nginx container.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+```
+ - Save the above yaml file as `nginx-deployment.yaml`.
+ - Open a terminal and navigate to the directory where the `nginx-deployment.yaml` file is saved.
+ - Run the following command to create the deployment:
+   ```bash
+   kubectl apply -f nginx-deployment.yaml or kubectl create -f nginx-deployment.yaml
+   ```
+ - Verify that the deployment is running by executing:
+   ```bash
+   kubectl get deployments
+   ```
+ - You should see the `nginx-deployment` listed with 3 replicas.
+ - To view the pods created by the deployment, run:
+   ```bash
+   kubectl get pods
+   ```
+ - You should see 3 pods with names starting with `nginx-deployment-`.
+ - To scale the deployment up or down, you can use the following command:
+   ```bash
+   kubectl scale deployment nginx-deployment --replicas=5
+   ```
+ - This command will scale the deployment to 5 replicas. You can verify the scaling by running `kubectl get deployments` again.
+ - To delete the deployment and all its associated pods, run:
+   ```bash
+   kubectl delete deployment nginx-deployment
+   ```
+- To view the number of replica sets, run:
+   ```bash
+   kubectl get replicasets or kubectl get rs
+   ```

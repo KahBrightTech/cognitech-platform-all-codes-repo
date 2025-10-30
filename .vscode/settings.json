@@ -1,0 +1,16 @@
+{
+    "vs-kubernetes": {
+        "disable-lints": [
+            "resource-limits",
+            "no-rolling-update-strategy",
+            "default-service-account",
+            "no-read-only-root-fs",
+            "privileged",
+            "run-as-non-root",
+            "dangling-service",
+            "mismatched-selector"
+        ]
+    },
+    "kubernetes.disable-lint.resource-limits": true,
+    "yaml.validate": false
+}
