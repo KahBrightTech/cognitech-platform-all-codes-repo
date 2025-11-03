@@ -536,4 +536,45 @@ spec:
 - **High Availability**: Continues working if Pods fail
 - **Decoupling**: Pods can be replaced without affecting clients
 
-```yaml
+##### Hands-on session for Kubernetes Services:
+- First go to the github source code and clone it to your local. The repo is https://github.com/iam-veeramalla/Docker-Zero-to-hero
+- In the demo hs used the python based application located at Kubernetes\Docker-Zero-to-Hero\examples\python-web-app
+- We created the docker image using the docker build command. So docker build -t python-web-app:latest:v1 .
+- Then we created a deployment.yaml file for the python app to be deployed. 
+- The app could not be accessed externally because the default service type is cluster ip. running curl -L ip:8000/demo allowed us to access the app within the cluster only.
+- To access the app within the organization we created a service.yaml file. 
+- To create a new service after creating the service.yaml file run the command kubectl apply -f service.yaml
+- To verify the service is created run the command kubectl get services
+- The service type we first created was nodeport which was mapped to port 30007 on the node. So to access the app we ran curl -L <minikube ip>:30007/demo
+- To access the minikube ip run the command minikube ip 
+- The cluster ip mapped with the port is mapped to the node ip with the nodeport which was 30007 in our case.. So to access the application you can either do so from within the cluster using the cluster ip and port or from within the organization using the node ip and nodeport. Docker creates an isolated network for the containers. Hence you cannot access the nodeport directly from the host machine. To access the application from your local your can create a service tunnel with the following command:
+  ```bash
+     minikube service <service-name> --url
+  ```
+- This will create a tunnel between the host machine and the minikube docker container. Now you can access the application using the url provided by the above command.
+- The load balancer type here will not work as it has to be run on a cloud provider. This is done by the cloud controller manager component of the control plane.
+- I was not able to access the nodeport using minikube cause it uses docker which is isolated and not accessed from the host. You need to create a tunnel to access the nodeport from the host machine. To create a tunnel run the command minikube tunnel in a separate terminal. This will create a tunnel between the host and the minikube docker container. Now you can access the nodeport using the minikube ip and nodeport.
+
+### Namespaces in Kubernetes:
+- Namespace in kubernetes is a logical isolation of resources, network, policies, rbac and everything else in a kubernetes cluster.
+- Namespaces are a way to divide cluster resources between multiple users (via resource quota). They provide a scope for names. Names of resources need to be unique within a namespace, but not across namespaces. Namespaces are intended for use in environments with many users spread across multiple teams, or projects.
+- You can use namespaces to create multiple virtual clusters within a single physical cluster. This allows you to isolate resources and manage access control for different teams or projects.
+- To create a namespace, you can use the following command:
+  ```bash
+  kubectl create namespace <namespace-name>
+  ```
+- To view all namespaces in the cluster, you can use the command:
+  ```bash 
+  kubectl get namespaces
+  ```
+- To deploy resources in a specific namespace, you can use the `-n` or `--namespace` flag with the `kubectl` command. For example:
+  ```bash
+  kubectl apply -f <resource-file.yaml> -n <namespace-name>
+  ```
+
+### Ingress in Kubernetes:
+- Ingress is a Kubernetes resource that manages external access to services within a cluster, typically HTTP and HTTPS traffic. It provides a way to define rules for routing incoming requests to different services based on the request's host or path.
+- Ingress acts as a reverse proxy, allowing you to expose multiple services under a single IP address or domain name. This is particularly useful for managing access to multiple applications running in a Kubernetes cluster.
+- To use Ingress, you need to have an Ingress controller deployed in your cluster. The Ingress controller is responsible for fulfilling the Ingress resource's rules and managing the traffic routing.
+
+
