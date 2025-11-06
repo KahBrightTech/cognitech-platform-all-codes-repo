@@ -657,6 +657,7 @@ ingress-nginx-controller-9cc49f96f-nnn4r   1/1     Running     0          98s
 - The configmap is created in a kubernetes cluster. The information is stored in the configmap and used by the application running in the pod.
 - The configmap can be created using a yaml file or using the kubectl command line tool
 - As a devops engineer you will be creating configmaps to store configuration data for the applications running in the kubernetes cluster.
+- Storing sensitive data in configmaps makes it vulnerable to hackers as they can get the information from either the configmap file by running **kubectl describe configmap <configmap-name>** or by accessing the etcd database directly since its not encrypted.
 #### Creating a ConfigMap using a yaml file:
 ```yaml
 apiVersion: v1
@@ -682,6 +683,8 @@ data:
   - Storing such sensitive information in plain text in configmaps or environment variables is not secure
   - Secrets provide a way to store such sensitive information securely in the kubernetes cluster
   - **Secrets are stored in etcd in an encoded format (base64 encoded) which is more secure than plain text**
+  - For secrets the data is encrypted at thge level of etcd. So even if a hacker gains access to the etcd database they will not be able to read the secrets as they are encrypted.
+  - As for the yaml file it is recommended to use a strong RBAC policy to restrict access to the yaml files containing secrets. Only authorized personnel should have access to such files.
 #### Creating a Secret using a yaml file:
 ```yaml
 apiVersion: v1
