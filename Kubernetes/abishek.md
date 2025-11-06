@@ -593,4 +593,113 @@ spec:
 - So if you used to use nginx load balancers in your legacy systems you can use the nginx ingress controller in kubernetes based on instructions provided by nginx.
 - The ingress resource is typically written once which is able to handle hundreds of services running in the kubernetes cluster. This reduces the cost of using multiple load balancers for each service.
 
+#### Hands on session for Kubernetes Ingress:
+- To create an ingress fisrt go to the kubernetes officiakl documentation and choose an ingress controller based on your requirements.
+- Go to https://kubernetes.io/docs/concepts/services-networking/ingress/
+- Create an ingress.yaml file as shown below:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cognilife
+spec:
+  rules:
+  - host: "cognilife.com"
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/save"
+        backend:
+          service:
+            name: cognilife
+            port:
+              number: 80
+```
+- Now deploy the file using the command:
+  ```bash
+     kubectl apply -f ingress.yaml
+  ```
+- To verify the ingress is created run the command:
+  ```bash
+     kubectl get ingress
+  ```
+- This will still not work because we havent created the ingress controller yet.
+- To create the ingress controller follow the instructions provided by the ingress controller of your choice.
+- Go to https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/ and follow the instructions provided there to create the ingress controller of your choice.
+- From here we will use the nginx ingress controller.
+- Follow the instructions provided here to create the nginx ingress controller: https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/
+- Once the ingress controller is created you can access your services using the ingress resource you created earlier.
+- The command to enable the ingress controller in minikube is:
+  ```bash
+     minikube addons enable ingress
+  ```
+- To verify the ingress controller is created run the command:
+  ```bash
+     kubectl get pods -n ingress-nginx
+  ```
+- The ingress ciontroller is also a pod and shows up as 
+```
+ingress-nginx-admission-create-5fb8b       0/1     Completed   0          98s
+ingress-nginx-admission-patch-vt77n        0/1     Completed   1          98s
+ingress-nginx-controller-9cc49f96f-nnn4r   1/1     Running     0          98s
+```
+- Since I dont have a domain on my local I first got the ingress co ntrollers ip using the command:
+  ```bash
+     kubectl get ingress
+  ```
+- Then I added an entry in the hosts file of my local machine to map the domain cognilife.com to the ingress controller ip.
+- Now I was able to access the service using the domain name cognilife.com/save
+
+### ConfigMaps and Secrets in Kubernetes:
+#### What is a ConfigMap?
+- Think about an application trying to get some configuration data from a database or a file. This configuration data can be anything such as database connection strings, API keys, feature flags, environment variables, etc.,
+- In kubernetes we have a special resource called ConfigMap to store such configuration data.
+- The configmap is created in a kubernetes cluster. The information is stored in the configmap and used by the application running in the pod.
+- The configmap can be created using a yaml file or using the kubectl command line tool
+- As a devops engineer you will be creating configmaps to store configuration data for the applications running in the kubernetes cluster.
+#### Creating a ConfigMap using a yaml file:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DATABASE_URL: "mongodb://mongo:27017/mydb"
+  FEATURE_FLAG: "true"  
+  API_KEY: "12345-abcde-67890-fghij"
+```
+- Save the above yaml file as configmap.yaml
+- To create the configmap run the command:
+  ```bash
+     kubectl apply -f configmap.yaml
+  ```
+- To verify the configmap is created run the command:
+  ```bash
+     kubectl get configmaps
+  ```
+  #### Why do we need secrets in kubernetes?
+  - Secrets in kubernetes are used to store sensitive information such as passwords, OAuth tokens, ssh keys, etc.,
+  - Storing such sensitive information in plain text in configmaps or environment variables is not secure
+  - Secrets provide a way to store such sensitive information securely in the kubernetes cluster
+  - **Secrets are stored in etcd in an encoded format (base64 encoded) which is more secure than plain text**
+#### Creating a Secret using a yaml file:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque
+data:
+  DB_PASSWORD: cGFzc3dvcmQxMjM=   # base64 encoded value of 'password123
+  API_TOKEN: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=  # base64 encoded value of 'abcdefghijklmnopqrstuvwxyz'
+```
+- Save the above yaml file as secret.yaml
+- To create the secret run the command:
+  ```bash
+     kubectl apply -f secret.yaml
+  ```
+- To verify the secret is created run the command:
+  ```bash
+     kubectl get secrets
+  ```
 
