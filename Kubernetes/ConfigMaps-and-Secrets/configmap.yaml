@@ -1,0 +1,9 @@
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DATABASE_URL: "mongodb://mongo:27017/mydb"
+  FEATURE_FLAG: "true"  
+  API_KEY: "12345-abcde-67890-fghij"

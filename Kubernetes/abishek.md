@@ -705,4 +705,5 @@ data:
   ```bash
      kubectl get secrets
   ```
-
+#### Hands-on session for ConfigMaps and Secrets:
+- 
