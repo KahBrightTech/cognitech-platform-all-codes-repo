@@ -578,8 +578,19 @@ spec:
     - Service discovery
     - Load balancing
     - Expose traffic to the outside world
-- Ingress is a Kubernetes resource that manages external access to services within a cluster, typically HTTP and HTTPS traffic. It provides a way to define rules for routing incoming requests to different services based on the request's host or path.
-- Ingress acts as a reverse proxy, allowing you to expose multiple services under a single IP address or domain name. This is particularly useful for managing access to multiple applications running in a Kubernetes cluster.
-- To use Ingress, you need to have an Ingress controller deployed in your cluster. The Ingress controller is responsible for fulfilling the Ingress resource's rules and managing the traffic routing.
+- However clients coming from legacy systems using enterprise load balancers noticed some limitation on the service offered by kubernetes.
+
+#### Limitations of Services:
+- The service only provides simple round robin load balancing which was limited unlike enterprise load balancers which offered advanced features such as SSL termination, sticky session, Path based load balancing, URL routing, and more.
+- Service of type load balancer was expensive as the cloud provider was charging the client for each service of type load balancer created.
+
+#### To overcome these limitations kubernetes introduced ingress.
+- To overcome this Red Hat implemented OpenShift to address these limitations.
+- The folks from google created an ingress controller called **GLBC** (Google Load Balancer Controller) to address these limitations.
+- Later on other ingress controllers were created such as **NGINX Ingress Controller**, **Traefik Ingress Controller**, **HAProxy Ingress Controller** etc.,
+- The ingress controller gives you all the features of an enterprise load balancer such as SSL termination, sticky session, Path based load balancing, URL routing, and more.
+- **The user creates the ingress resource and the load balancing companies like nginx or F5 writes their own ingress controllers and place them in github and provides instructions on how to use their ingress controllers. The organization can choose any ingress controller they want based on their requirements**.
+- So if you used to use nginx load balancers in your legacy systems you can use the nginx ingress controller in kubernetes based on instructions provided by nginx.
+- The ingress resource is typically written once which is able to handle hundreds of services running in the kubernetes cluster. This reduces the cost of using multiple load balancers for each service.
 
 
