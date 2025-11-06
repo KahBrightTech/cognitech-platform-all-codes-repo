@@ -573,6 +573,11 @@ spec:
   ```
 
 ### Ingress in Kubernetes:
+#### What is ingress? 
+- The service offered the following benefits:
+    - Service discovery
+    - Load balancing
+    - Expose traffic to the outside world
 - Ingress is a Kubernetes resource that manages external access to services within a cluster, typically HTTP and HTTPS traffic. It provides a way to define rules for routing incoming requests to different services based on the request's host or path.
 - Ingress acts as a reverse proxy, allowing you to expose multiple services under a single IP address or domain name. This is particularly useful for managing access to multiple applications running in a Kubernetes cluster.
 - To use Ingress, you need to have an Ingress controller deployed in your cluster. The Ingress controller is responsible for fulfilling the Ingress resource's rules and managing the traffic routing.
