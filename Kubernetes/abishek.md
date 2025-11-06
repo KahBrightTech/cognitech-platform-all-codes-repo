@@ -651,7 +651,7 @@ ingress-nginx-controller-9cc49f96f-nnn4r   1/1     Running     0          98s
 - Now I was able to access the service using the domain name cognilife.com/save
 
 ### ConfigMaps and Secrets in Kubernetes:
-#### What is a ConfigMap?
+#### What is a ConfigMap? Non sensitive data storage
 - Think about an application trying to get some configuration data from a database or a file. This configuration data can be anything such as database connection strings, API keys, feature flags, environment variables, etc.,
 - In kubernetes we have a special resource called ConfigMap to store such configuration data.
 - The configmap is created in a kubernetes cluster. The information is stored in the configmap and used by the application running in the pod.
@@ -677,7 +677,7 @@ data:
   ```bash
      kubectl get configmaps
   ```
-  #### Why do we need secrets in kubernetes?
+  #### Why do we need secrets in kubernetes? Sensitive data storage
   - Secrets in kubernetes are used to store sensitive information such as passwords, OAuth tokens, ssh keys, etc.,
   - Storing such sensitive information in plain text in configmaps or environment variables is not secure
   - Secrets provide a way to store such sensitive information securely in the kubernetes cluster
