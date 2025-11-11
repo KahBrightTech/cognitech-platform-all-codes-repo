@@ -901,3 +901,54 @@ spec:
 - The role associated to a user or service account is done using Role Bindings and Cluster Role Bindings. 
 - The user or service account gets all the permissions defined in the role or cluster role associated with it using role bindings or cluster role bindings.
 - The role takes care of the permission and the role binding takes care of associating the role to a user or service account.
+- Example of Role:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+```
+- Example of Role Binding:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods
+  namespace: default
+subjects:
+- kind: User
+  name: your-username
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+### How to create a free openshift Cluster:
+- Go to google and search for openshift sandbox 
+- Proceed to https://developers.redhat.com/developer-sandbox?source=sso
+- Login with your red hat account. If you dont have one create a new account.
+- You are using a shared cluster with a dedicated namespace for you.
+- To access the cluster via the cli click on your username on the top right corner and click on copy login Commands
+- Follow the instructions provided to login to the cluster using the oc command line tool.
+- You can also access the openshift web console using the link provided in the same page.
+- However you need to install the oc command line tool in your local machine to access the cluster via cli.
+- To install the oc command line tool go to https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/
+- Download the oc tool based on your operating system.
+- Extract the downloaded file and add the oc binary to your PATH environment variable.
+- you can also install it using winget if you are using windows. Just run the command:
+  ```bash
+     winget install RedHat.OpenShift-Client
+  ```
+- Once you have installed the oc command line tool you can verify the installation by running the command:
+  ```bash
+     oc version
+  ```
+
+### Kubernetes Monitoring: 
+
