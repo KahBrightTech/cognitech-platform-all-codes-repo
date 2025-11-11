@@ -678,6 +678,10 @@ data:
   ```bash
      kubectl get configmaps
   ```
+- To edit the configmap run the command:
+  ```bash
+     kubectl edit configmap configmap-name ex : kubectl edit configmap app-config
+  ```
   #### Why do we need secrets in kubernetes? Sensitive data storage
   - Secrets in kubernetes are used to store sensitive information such as passwords, OAuth tokens, ssh keys, etc.,
   - Storing such sensitive information in plain text in configmaps or environment variables is not secure
@@ -706,4 +710,140 @@ data:
      kubectl get secrets
   ```
 #### Hands-on session for ConfigMaps and Secrets:
-- 
+- After creating the configmap using the above command you can use the configmap in your pod in the following ways:
+  - As environment variables
+  - As command line arguments
+  - As configuration files in a volume
+- To use the configmap as environment variables in a pod, you can use the following yaml file:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-pod
+spec:
+  containers:
+  - name: app-container
+    image: my-app:latest
+    envFrom:
+    - configMapRef:
+        name: app-config
+```
+- This can also be used in our deployments. Similarly secrets can also be used as environment variables in a pod or deployment. To use a configmap in a deployemhent you can use the following yaml file:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app-container
+        image: my-app:latest
+        env:
+        - name: DB-PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db-port
+        - name: DB-HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db-host
+        - name: DB-USER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db-user
+        - name: DB-PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: db-password
+```
+- In the above deployment yaml file we are using both configmap and secret to store database connection
+- The configmap needs to be created first before creating the deployment. The secret also needs to be created before creating the deployment.
+- You can login to the pod and verify the environment variables are set using the command:
+  ```bash
+     kubectl exec -it app-pod -- /bin/bash
+  ```
+- Then run the command:
+  ```bash
+     env | grep DB
+  ```
+- This will show the environment variables set in the pod.
+- what if I want to update the environment variables in the pods using the configmap? This cannot be done in the container directly. 
+- Kubernetes suggest to use VolumeMounts to update any changing variables. So instead of configmap use VolumeMounts to mount the configmap as a file in the pod. Whenever the configmap is updated the file in the pod will also be updated. The application can read the file and get the updated values. This way we can avoid restarting the pod to get the updated values.
+- To create a volume mount you update the yaml file to add the volumes as shown below:
+```yaml 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app-container
+        image: my-app:latest
+        volumeMounts:
+        - name: config-volume
+          mountPath: /opt
+      volumes:
+      - name: config-volume
+        configMap:
+          name: app-config
+```
+- In the above yaml file we are mounting the configmap as a file in the pod at /opt
+- This will automatically update the file in the pod whenever the configmap is updated.
+- To update the configmap you can use the following command:
+  ```bash
+     kubectl edit configmap app-config
+  ```
+- To verify the configmap is created run the command:
+  ```bash
+     kubectl get configmaps
+  ```
+- Once the configmap get updated with new values the pods automatically gets updated as these are mounted volumes which does not require restarted or destroying the pod.
+- There is a little bit of delay in updating the configmap values in the pod. It takes around 1 minute to update the values in the pod.
+- Similarly secrets can also be mounted as volumes in the pod. The process is same as configmaps.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app-container
+        image: my-app:latest
+        volumeMounts:
+        - name: secret-volume
+          mountPath: /etc/secret
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: app-secret  
