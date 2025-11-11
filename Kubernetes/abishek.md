@@ -847,3 +847,57 @@ spec:
       - name: secret-volume
         secret:
           secretName: app-secret  
+```
+- To encrypt your secrets use other encryption methods like hashicorp vault, AWS ksm, Azure key vault etc.,
+- To add a secret to the deployment file using VolumeMounts you can use the following yaml file:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app-container
+        image: my-app:latest
+        volumeMounts:
+        - name: secret-volume
+          mountPath: /etc/secret
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: app-secret
+```
+
+### Kubernetes RBAC (Role-Based Access Control):
+- Kubernetes RBAC is a method of regulating access to resources based on the roles of individual users within an organization.
+- RBAC allows you to define roles and permissions for users and groups, and then assign those roles to specific users or groups.
+- RBAC is implemented using a combination of roles, role bindings, cluster roles, and cluster role bindings.
+  - **Roles**: A role is a set of permissions that can be assigned to users or groups within a specific namespace. Roles define what actions can be performed on specific resources within that namespace.
+  - **Role Bindings**: A role binding is used to assign a role to a user or group within a specific namespace. Role bindings specify which users or groups have access to the resources defined in the role.
+  - **Cluster Roles**: A cluster role is similar to a role, but it applies to the entire cluster rather than a specific namespace. Cluster roles define what actions can be performed on resources across all namespaces in the cluster.
+  - **Cluster Role Bindings**: A cluster role binding is used to assign a cluster role to a user or group across the entire cluster. Cluster role bindings specify which users or groups have access to the resources defined in the cluster role.
+- RBAC is divided into 3 parts which are **users**/**service accounts**, **Roles/Cluster Roles** and **Role Bindings/Cluster Role Bindings**.
+  - **Users**: Users are human users who interact with the kubernetes cluster using the kubectl command line tool or other kubernetes clients. Users can be assigned roles and permissions using RBAC.
+  - **Service Accounts**: Service accounts are non-human users that are used by applications running in the kubernetes cluster to interact with the kubernetes API. Service accounts can also be assigned roles and permissions using RBAC.
+  - **Roles/Cluster Roles**: Roles and cluster roles define the permissions that users and service accounts have within the kubernetes cluster. Roles are specific to a namespace, while cluster roles apply to the entire cluster.
+  - **Role Bindings/Cluster Role Bindings**: Role bindings and cluster role bindings are used to assign roles and cluster roles to users and service accounts. Role bindings are specific to a namespace, while cluster role bindings apply to the entire cluster.
+#### Key points about Kubernetes RBAC:
+- Kubernetes does not deal with user management directly. User management is typically handled by an external identity provider such as LDAP, Active Directory, or OAuth.
+- For instance in eks you can integrate with AWS IAM to manage users and their access to the kubernetes cluster.
+- Kuberenetes also supports idps like OKTA, Keycloak, Dex etc., to manage users and their access to the kubernetes cluster.
+- For service account kubernetes pods come with a default service account. You can also create custom service accounts for your applications running in the kubernetes cluster.
+- Roles and Role bindings helps grant access to users and service accounts to access resources in the kubernetes cluster. 
+- The Role grants permissions to users or service accounts to access resources in a specific namespace.
+- The Cluster Role grants permissions to users or service accounts to access resources across all namespaces in the kubernetes cluster.
+- The role associated to a user or service account is done using Role Bindings and Cluster Role Bindings. 
+- The user or service account gets all the permissions defined in the role or cluster role associated with it using role bindings or cluster role bindings.
+- The role takes care of the permission and the role binding takes care of associating the role to a user or service account.
