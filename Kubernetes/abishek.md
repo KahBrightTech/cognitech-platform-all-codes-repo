@@ -951,4 +951,61 @@ roleRef:
   ```
 
 ### Kubernetes Monitoring: 
+- Montioring is a lot easier with just one kubernetes cluster. However when you have multiple clusters across multiple regions and multiple cloud providers monitoring becomes a challenge.
+- As the number of clusters increases the complexity of monitoring also increases.
+- Some of the popular monitoring tools for kubernetes are:
+  - Prometheus
+  - Grafana
+  - ELK Stack (Elasticsearch, Logstash, Kibana)
+  - Jaeger
+  - Zipkin
+- Promoetheus and Grafana are the most popular monitoring tools for kubernetes.
+- Prometheus is an open-source monitoring and alerting toolkit designed for reliability and scalability. It collects metrics from configured targets at specified intervals, evaluates rule expressions, displays the results, and can trigger alerts if certain conditions are met.
+- There is a component in prometheus called prometheuse server which scrapes the metrics from the kubernetes cluster and stores them in a time-series database.
+- it stored the metrics in a time-series database which can be queried using the prometheus query language (PromQL).
+- prometheus also allows for alerting based on the metrics collected. You can define alerting rules in prometheus and configure alertmanager to send alerts via email, slack, pagerduty, etc.,
+
+![pic3](screenshots/pic3.png)
+- The inbuild kubernetes api server exposes some metrics which can be scraped by prometheus server.
+- Grafana retrieves and displays the data stored in prometheus in the form of dashboards and graphs.
+- Grafana supports multiple data sources including prometheus, elasticsearch, influxdb, etc.,
+- To install prometheus you can either use helm or operators
+- operators offers more advanced features and is the recommended way to install prometheus in kubernetes.
+- To install prometheus using operators follow the instructions provided in the official prometheus operator github repo:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
+  ```
+  - To install prometheus using helm follow the instructions provided in the official prometheus helm chart github repo:
+  - First ensure that you have helm installed in your local machine.
+  - To install helm go to https://helm.sh/docs/intro/install/ and follow the instructions provided there.
+  - Commands are provided below for installing helm in windows using winget:
+  ```bash
+  winget install Helm.Helm
+  ``` 
+  - Once you have helm installed you can install prometheus using the following commands:
+  ```bash
+  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+  helm repo update
+  helm install prometheus prometheus-community/prometheus
+  ```
+- Now run kubectl get pods -A to verify all the prometheus pods are running.
+- You should use the kubectl expose command to expose the prometheus server as a service of type load balancer or nodeport in a production environment.
+  ```
+  kubectl expose service prometheus-server --type=NodePort --target-port 9090 --name=prometheus-service
+  ```
+- Now run the service command to get the nodeport assigned to the prometheus server.
+  ```
+  kubectl get services
+  ```
+- To access the new prometheuse service rune the command 
+  ```
+  minikube service prometheus-service --url
+  ```
+- Now you can access the prometheus server using the URL provided by the above command.
+- **prometheus-kube-state-metrics** is a service that listens to the Kubernetes API server and generates metrics about the state of the objects. It is an add-on service that is deployed alongside Prometheus to provide additional insights into the state of the Kubernetes cluster.
+- To install grafana you can either use helm or operators
+- To install grafana using operators follow the instructions provided in the official grafana operator github repo:
+  ```bash
+  kubectl apply -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/main/deploy/manifests/grafana-operator.yaml
+  ```
 
