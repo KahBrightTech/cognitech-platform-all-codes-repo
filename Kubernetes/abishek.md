@@ -1034,4 +1034,18 @@ roleRef:
 - Remember grafan uses the info from prometheus but gives you the information in a better visualized way using dashboards and graphs.
 
 ### Custom Resources:
-- 
+- what is a custom resource definition or CRD?
+- A Custom Resource Definition (CRD) is a powerful feature in Kubernetes that allows you to extend the Kubernetes API by adding your own custom resources. This means you can define your own resource types, which behave like built-in Kubernetes resources (such as Pods, Services, etc.) and can be managed using the same Kubernetes tools and APIs.
+- This can happen if you feel like the existing kubernetes resources do not meet your requirements.
+- For example, you might want to create a custom resource to manage a specific type of application or service that is not natively supported by Kubernetes.
+- Deploying the custom resource and custom controller is the responisibility of the devops engineer.
+- A custom resource defintion is defining a new api object in kubernetes.
+- This is done through a yaml file which defines the custom resource.
+- Regular objects in kubernetes like pods or deployments are validated by the resource definition while custom resources are validated by the custom resource definition.
+- The customer kubernetes controller is deployed in your cluster to manage the lifecycle of the custom resources.
+- This watches for the custom resources and takes necessary actions based on the state of the custom resources.
+- For example if you create a custom resource to manage a database, the custom controller can watch for the custom resource and create a database instance when a new custom resource is created.
+- The custom controller is deployed by the devops engineer in the kubernetes cluster.
+- A popular of writing a custom controller is using golang or python
+
+
