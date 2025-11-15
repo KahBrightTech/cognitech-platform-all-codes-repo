@@ -1003,9 +1003,35 @@ roleRef:
   ```
 - Now you can access the prometheus server using the URL provided by the above command.
 - **prometheus-kube-state-metrics** is a service that listens to the Kubernetes API server and generates metrics about the state of the objects. It is an add-on service that is deployed alongside Prometheus to provide additional insights into the state of the Kubernetes cluster.
+#### Installing Grafana
 - To install grafana you can either use helm or operators
-- To install grafana using operators follow the instructions provided in the official grafana operator github repo:
+- To install grafana using helm follow the instructions provided in the official grafana helm chart github repo:
   ```bash
-  kubectl apply -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/main/deploy/manifests/grafana-operator.yaml
+  helm repo add grafana https://grafana.github.io/helm-charts
+  helm repo update
+  helm install grafana grafana/grafana
   ```
+- Once you have grafana up and running you need to add prometheus as a data source in grafana.
+- This provides it access to the metrics stored in prometheus.
+- To do this on the web ui go to data sources and add prometheus as a data source.
+- Select prometheus from the list of data sources and provide the prometheus server URL.
+- Provide the ip of the prometheus server and the port number.
+- Run kubectl get services to get the prometheus server ip and port number.
+- mine service was called prometheus-server and the port number was 80 so the url will be http://prometheus-server:80
+- Save and test the data source.
+- Now you can create dashboards in grafana using the metrics stored in prometheus. 
+- Go to dashboards and create a new dashboard.
+- Select discard changes when prompted
+- Enter the number 3662 (This is a standard template for grafana) in the query boix and select load
+- Provide a name for the dashboard and select the prometheus data source and import. 
+- This creates the Grafana dashboard for kubernetes cluster monitoring.
+- Thye kube state metrics provides detailed information about the state of the kubernetes objects such as deployments, pods, services, etc.,
+- You can create custom dashboards in grafana using the metrics provided by kube state metrics. 
+- You can expose the kube state metrics buy running the following command:
+  ```bash
+  kubectl expose service prometheus-kube-state-metrics --type=NodePort --target-port=8080 --name=prometheus-kube-state-metrics-external
+  ```
+- Remember grafan uses the info from prometheus but gives you the information in a better visualized way using dashboards and graphs.
 
+### Custom Resources:
+- 
