@@ -220,7 +220,6 @@ The data plane consists of worker nodes that run the containerized applications.
 - **Kube-proxy**: Network proxy for service communication
 - **Container Runtime**: Executes and manages containers
 - **Pods**: Smallest deployable units containing containers
-  stopped at the 1:00:14 mark
 
 ### Installing Kubernetes Locally with Minikube:
 
@@ -337,7 +336,7 @@ spec:
 
 #### Kubernetes Deployments:
 
-- What is the difference between a container a pod and a deployment?
+- What is the difference between a container pod and a deployment?
   - A **container** is a lightweight, standalone executable package that includes everything needed to run a piece of software, including the code, runtime, libraries, and system tools. Containers are isolated from each other and the host system, allowing for consistent and reproducible environments.
   - A **pod** is the smallest deployable unit in Kubernetes and represents a single instance of a running process in a cluster. A pod can contain one or more containers that share the same network namespace and storage volumes. Pods are ephemeral and can be created, destroyed, and recreated as needed. Pods are not capable of autoscaling or self-healing on their own.
   - A **deployment** is a higher-level abstraction in Kubernetes that manages a set of pods. It defines the desired state of the application, including the number of replicas (pods) to run, the container image to use, and other configuration details. Deployments provide features such as rolling updates, scaling, and self-healing to ensure that the application remains available and responsive. Kubernetes suggest not to create pods directly but do it through deployments., Deployments create replica sets which in turn create pods.  Replica sets ensure that the desired number of pod replicas are always running. This is how apps achieve zero downtime and high availability. Replica sets are kubernetes controllers that monitor the state of pods and ensure that the desired number of replicas are always running. If a pod fails or is deleted, the replica set will automatically create a new pod to replace it.
@@ -397,12 +396,17 @@ spec:
 
 ### Kubernetes Services:
 
-- This is a critical concept in kubernetes. For each deployment is kubernetes you create a service. 
+- This is a critical concept in kubernetes. For each deployment is kubernetes you create a service.
+
 #### What is the importance of services in kubernetes?
+
 ##### Without services:
-- The ideal pods count is contingent on the number of users trying to access the pods and the number of connections each pod can handle. A pod going down is not an issue in kubernetes due to the autohealing capability. When a pod comes up it has a new ip address so in a scenario without services you will have to provide the new ip address to users trying to access the pod. This is not feasible in a production environment. 
+
+- The ideal pods count is contingent on the number of users trying to access the pods and the number of connections each pod can handle. A pod going down is not an issue in kubernetes due to the autohealing capability. When a pod comes up it has a new ip address so in a scenario without services you will have to provide the new ip address to users trying to access the pod. This is not feasible in a production environment.
+
 ##### With services:
-- Services provide a **stable endpoint (IP address and DNS name)** for accessing a set of pods, regardless of their individual IP addresses. 
+
+- Services provide a **stable endpoint (IP address and DNS name)** for accessing a set of pods, regardless of their individual IP addresses.
 - Services also provide load balancing, distributing incoming traffic across multiple pod instances to ensure high availability and optimal resource utilization.
 - Service discovery. The service keeps track of pods that match its label selector and automatically updates its endpoints as pods are added or removed. This allows clients to discover and connect to the appropriate pods without needing to know their individual IP addresses.
 - Service can also expose the application to external traffic using different service types such as **NodePort**, **LoadBalancer**, and **ClusterIP**.
@@ -464,6 +468,7 @@ spec:
 #### How Kubernetes Service Works:
 
 ##### 1. **Service Discovery**
+
 ```
 Service provides a stable endpoint:
 - DNS Name: web-svc.default.svc.cluster.local
@@ -472,11 +477,13 @@ Service provides a stable endpoint:
 ```
 
 ##### 2. **Traffic Flow**
+
 ```
 Client Request → Service (Port 80) → Load Balancer → Pod (Port 8080)
 ```
 
 ##### 3. **Label Selector Matching**
+
 ```yaml
 # Service Definition
 apiVersion: v1
@@ -493,8 +500,9 @@ spec:
 ```
 
 ##### 4. **Service Types**
+
 - **ClusterIP**: Internal access only. This only works within the cluster. Only benefits here are discovery and load balancing. Only people who have access to the cluster can access the app. This is the default service type.
-- **NodePort**: External access via Node IP and port within the organization. Who has access to the nodes can access the service. Only people who have access to the nodes in the vpc can access the app. 
+- **NodePort**: External access via Node IP and port within the organization. Who has access to the nodes can access the service. Only people who have access to the nodes in the vpc can access the app.
 - **LoadBalancer**: External access via cloud provider load balancer. This allows access from outside the organization. You can access the app using a public IP address. This only works if you are running kubernetes on a cloud provider that supports load balancers. for instance amazon.com
 
 ```
@@ -527,26 +535,29 @@ spec:
 ```
 
 ##### 6. **Load Balancing Algorithms**
+
 - **Round Robin** (Default): Distributes requests evenly
 - **Session Affinity**: Routes to same Pod based on client IP
 
 #### Key Benefits of Services:
+
 - **Service Discovery**: Stable DNS name and IP
 - **Load Balancing**: Distributes traffic across healthy Pods
 - **High Availability**: Continues working if Pods fail
 - **Decoupling**: Pods can be replaced without affecting clients
 
 ##### Hands-on session for Kubernetes Services:
+
 - First go to the github source code and clone it to your local. The repo is https://github.com/iam-veeramalla/Docker-Zero-to-hero
 - In the demo hs used the python based application located at Kubernetes\Docker-Zero-to-Hero\examples\python-web-app
-- We created the docker image using the docker build command. So docker build -t python-web-app:latest:v1 .
-- Then we created a deployment.yaml file for the python app to be deployed. 
+- We created the docker image using the docker build command. So **docker build -t python-web-app:latest:v1 .**
+- Then we created a deployment.yaml file for the python app to be deployed.
 - The app could not be accessed externally because the default service type is cluster ip. running curl -L ip:8000/demo allowed us to access the app within the cluster only.
-- To access the app within the organization we created a service.yaml file. 
-- To create a new service after creating the service.yaml file run the command kubectl apply -f service.yaml
-- To verify the service is created run the command kubectl get services
-- The service type we first created was nodeport which was mapped to port 30007 on the node. So to access the app we ran curl -L <minikube ip>:30007/demo
-- To access the minikube ip run the command minikube ip 
+- To access the app within the organization we created a service.yaml file.
+- To create a new service after creating the service.yaml file run the command **kubectl apply -f service.yaml**
+- To verify the service is created run the command **kubectl get services**
+- The service type we first created was nodeport which was mapped to port 30007 on the node. So to access the app we ran curl -L `<minikube ip>`:30007/demo
+- To access the minikube ip run the command minikube ip
 - The cluster ip mapped with the port is mapped to the node ip with the nodeport which was 30007 in our case.. So to access the application you can either do so from within the cluster using the cluster ip and port or from within the organization using the node ip and nodeport. Docker creates an isolated network for the containers. Hence you cannot access the nodeport directly from the host machine. To access the application from your local your can create a service tunnel with the following command:
   ```bash
      minikube service <service-name> --url
@@ -556,7 +567,8 @@ spec:
 - I was not able to access the nodeport using minikube cause it uses docker which is isolated and not accessed from the host. You need to create a tunnel to access the nodeport from the host machine. To create a tunnel run the command minikube tunnel in a separate terminal. This will create a tunnel between the host and the minikube docker container. Now you can access the nodeport using the minikube ip and nodeport.
 
 ### Namespaces in Kubernetes:
-- Namespace in kubernetes is a logical isolation of resources, network, policies, rbac and everything else in a kubernetes cluster.
+
+- **Namespace in kubernetes is a logical isolation of resources, network, policies, rbac and everything else in a kubernetes cluster.**
 - Namespaces are a way to divide cluster resources between multiple users (via resource quota). They provide a scope for names. Names of resources need to be unique within a namespace, but not across namespaces. Namespaces are intended for use in environments with many users spread across multiple teams, or projects.
 - You can use namespaces to create multiple virtual clusters within a single physical cluster. This allows you to isolate resources and manage access control for different teams or projects.
 - To create a namespace, you can use the following command:
@@ -564,7 +576,7 @@ spec:
   kubectl create namespace <namespace-name>
   ```
 - To view all namespaces in the cluster, you can use the command:
-  ```bash 
+  ```bash
   kubectl get namespaces
   ```
 - To deploy resources in a specific namespace, you can use the `-n` or `--namespace` flag with the `kubectl` command. For example:
@@ -573,18 +585,22 @@ spec:
   ```
 
 ### Ingress in Kubernetes:
-#### What is ingress? 
+
+#### What is ingress?
+
 - The service offered the following benefits:
-    - Service discovery
-    - Load balancing
-    - Expose traffic to the outside world
+  - Service discovery
+  - Load balancing
+  - Expose traffic to the outside world
 - However clients coming from legacy systems using enterprise load balancers noticed some limitation on the service offered by kubernetes.
 
 #### Limitations of Services:
+
 - The service only provides simple round robin load balancing which was limited unlike enterprise load balancers which offered advanced features such as SSL termination, sticky session, Path based load balancing, URL routing, and more.
 - Service of type load balancer was expensive as the cloud provider was charging the client for each service of type load balancer created.
 
 #### To overcome these limitations kubernetes introduced ingress.
+
 - To overcome this Red Hat implemented OpenShift to address these limitations.
 - The folks from google created an ingress controller called **GLBC** (Google Load Balancer Controller) to address these limitations.
 - Later on other ingress controllers were created such as **NGINX Ingress Controller**, **Traefik Ingress Controller**, **HAProxy Ingress Controller** etc.,
@@ -594,9 +610,11 @@ spec:
 - The ingress resource is typically written once which is able to handle hundreds of services running in the kubernetes cluster. This reduces the cost of using multiple load balancers for each service.
 
 #### Hands on session for Kubernetes Ingress:
-- To create an ingress fisrt go to the kubernetes officiakl documentation and choose an ingress controller based on your requirements.
+
+- To create an ingress first go to the kubernetes official documentation and choose an ingress controller based on your requirements.
 - Go to https://kubernetes.io/docs/concepts/services-networking/ingress/
 - Create an ingress.yaml file as shown below:
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -615,6 +633,7 @@ spec:
             port:
               number: 80
 ```
+
 - Now deploy the file using the command:
   ```bash
      kubectl apply -f ingress.yaml
@@ -637,13 +656,15 @@ spec:
   ```bash
      kubectl get pods -n ingress-nginx
   ```
-- The ingress ciontroller is also a pod and shows up as 
+- The ingress controller is also a pod and shows up as
+
 ```
 ingress-nginx-admission-create-5fb8b       0/1     Completed   0          98s
 ingress-nginx-admission-patch-vt77n        0/1     Completed   1          98s
 ingress-nginx-controller-9cc49f96f-nnn4r   1/1     Running     0          98s
 ```
-- Since I dont have a domain on my local I first got the ingress co ntrollers ip using the command:
+
+- Since I dont have a domain on my local I first got the ingress controllers ip using the command:
   ```bash
      kubectl get ingress
   ```
@@ -651,14 +672,18 @@ ingress-nginx-controller-9cc49f96f-nnn4r   1/1     Running     0          98s
 - Now I was able to access the service using the domain name cognilife.com/save
 
 ### ConfigMaps and Secrets in Kubernetes:
+
 #### What is a ConfigMap? Non sensitive data storage
+
 - Think about an application trying to get some configuration data from a database or a file. This configuration data can be anything such as database connection strings, API keys, feature flags, environment variables, etc.,
 - In kubernetes we have a special resource called ConfigMap to store such configuration data.
 - The configmap is created in a kubernetes cluster. The information is stored in the configmap and used by the application running in the pod.
 - The configmap can be created using a yaml file or using the kubectl command line tool
 - As a devops engineer you will be creating configmaps to store configuration data for the applications running in the kubernetes cluster.
-- Storing sensitive data in configmaps makes it vulnerable to hackers as they can get the information from either the configmap file by running **kubectl describe configmap <configmap-name>** or by accessing the etcd database directly since its not encrypted.
+- Storing sensitive data in configmaps makes it vulnerable to hackers as they can get the information from either the configmap file by running **kubectl describe configmap `<configmap-name>`** or by accessing the etcd database directly since its not encrypted.
+
 #### Creating a ConfigMap using a yaml file:
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -669,6 +694,7 @@ data:
   FEATURE_FLAG: "true"  
   API_KEY: "12345-abcde-67890-fghij"
 ```
+
 - Save the above yaml file as configmap.yaml
 - To create the configmap run the command:
   ```bash
@@ -682,14 +708,18 @@ data:
   ```bash
      kubectl edit configmap configmap-name ex : kubectl edit configmap app-config
   ```
+
   #### Why do we need secrets in kubernetes? Sensitive data storage
+
   - Secrets in kubernetes are used to store sensitive information such as passwords, OAuth tokens, ssh keys, etc.,
   - Storing such sensitive information in plain text in configmaps or environment variables is not secure
   - Secrets provide a way to store such sensitive information securely in the kubernetes cluster
   - **Secrets are stored in etcd in an encoded format (base64 encoded) which is more secure than plain text**
   - For secrets the data is encrypted at thge level of etcd. So even if a hacker gains access to the etcd database they will not be able to read the secrets as they are encrypted.
   - As for the yaml file it is recommended to use a strong RBAC policy to restrict access to the yaml files containing secrets. Only authorized personnel should have access to such files.
+
 #### Creating a Secret using a yaml file:
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -700,6 +730,7 @@ data:
   DB_PASSWORD: cGFzc3dvcmQxMjM=   # base64 encoded value of 'password123
   API_TOKEN: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=  # base64 encoded value of 'abcdefghijklmnopqrstuvwxyz'
 ```
+
 - Save the above yaml file as secret.yaml
 - To create the secret run the command:
   ```bash
@@ -709,12 +740,15 @@ data:
   ```bash
      kubectl get secrets
   ```
+
 #### Hands-on session for ConfigMaps and Secrets:
+
 - After creating the configmap using the above command you can use the configmap in your pod in the following ways:
   - As environment variables
   - As command line arguments
   - As configuration files in a volume
 - To use the configmap as environment variables in a pod, you can use the following yaml file:
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -728,7 +762,9 @@ spec:
     - configMapRef:
         name: app-config
 ```
+
 - This can also be used in our deployments. Similarly secrets can also be used as environment variables in a pod or deployment. To use a configmap in a deployemhent you can use the following yaml file:
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -769,6 +805,7 @@ spec:
               name: app-secret
               key: db-password
 ```
+
 - In the above deployment yaml file we are using both configmap and secret to store database connection
 - The configmap needs to be created first before creating the deployment. The secret also needs to be created before creating the deployment.
 - You can login to the pod and verify the environment variables are set using the command:
@@ -780,10 +817,11 @@ spec:
      env | grep DB
   ```
 - This will show the environment variables set in the pod.
-- what if I want to update the environment variables in the pods using the configmap? This cannot be done in the container directly. 
-- Kubernetes suggest to use VolumeMounts to update any changing variables. So instead of configmap use VolumeMounts to mount the configmap as a file in the pod. Whenever the configmap is updated the file in the pod will also be updated. The application can read the file and get the updated values. This way we can avoid restarting the pod to get the updated values.
+- what if I want to update the environment variables in the pods using the configmap? This cannot be done in the container directly.
+- Kubernetes suggest to use **VolumeMounts** to update any changing variables. So instead of configmap use VolumeMounts to mount the configmap as a file in the pod. Whenever the configmap is updated the file in the pod will also be updated. The application can read the file and get the updated values. This way we can avoid restarting the pod to get the updated values.
 - To create a volume mount you update the yaml file to add the volumes as shown below:
-```yaml 
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -809,6 +847,7 @@ spec:
         configMap:
           name: app-config
 ```
+
 - In the above yaml file we are mounting the configmap as a file in the pod at /opt
 - This will automatically update the file in the pod whenever the configmap is updated.
 - To update the configmap you can use the following command:
@@ -819,9 +858,10 @@ spec:
   ```bash
      kubectl get configmaps
   ```
-- Once the configmap get updated with new values the pods automatically gets updated as these are mounted volumes which does not require restarted or destroying the pod.
+- Once the configmap get updated with new values automatically gets updated as these are mounted volumes which does not require restarted or destroying the pod.
 - There is a little bit of delay in updating the configmap values in the pod. It takes around 1 minute to update the values in the pod.
 - Similarly secrets can also be mounted as volumes in the pod. The process is same as configmaps.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -848,8 +888,10 @@ spec:
         secret:
           secretName: app-secret  
 ```
+
 - To encrypt your secrets use other encryption methods like hashicorp vault, AWS ksm, Azure key vault etc.,
 - To add a secret to the deployment file using VolumeMounts you can use the following yaml file:
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -878,6 +920,7 @@ spec:
 ```
 
 ### Kubernetes RBAC (Role-Based Access Control):
+
 - Kubernetes RBAC is a method of regulating access to resources based on the roles of individual users within an organization.
 - RBAC allows you to define roles and permissions for users and groups, and then assign those roles to specific users or groups.
 - RBAC is implemented using a combination of roles, role bindings, cluster roles, and cluster role bindings.
@@ -890,18 +933,21 @@ spec:
   - **Service Accounts**: Service accounts are non-human users that are used by applications running in the kubernetes cluster to interact with the kubernetes API. Service accounts can also be assigned roles and permissions using RBAC.
   - **Roles/Cluster Roles**: Roles and cluster roles define the permissions that users and service accounts have within the kubernetes cluster. Roles are specific to a namespace, while cluster roles apply to the entire cluster.
   - **Role Bindings/Cluster Role Bindings**: Role bindings and cluster role bindings are used to assign roles and cluster roles to users and service accounts. Role bindings are specific to a namespace, while cluster role bindings apply to the entire cluster.
+
 #### Key points about Kubernetes RBAC:
+
 - Kubernetes does not deal with user management directly. User management is typically handled by an external identity provider such as LDAP, Active Directory, or OAuth.
 - For instance in eks you can integrate with AWS IAM to manage users and their access to the kubernetes cluster.
 - Kuberenetes also supports idps like OKTA, Keycloak, Dex etc., to manage users and their access to the kubernetes cluster.
 - For service account kubernetes pods come with a default service account. You can also create custom service accounts for your applications running in the kubernetes cluster.
-- Roles and Role bindings helps grant access to users and service accounts to access resources in the kubernetes cluster. 
+- Roles and Role bindings helps grant access to users and service accounts to access resources in the kubernetes cluster.
 - The Role grants permissions to users or service accounts to access resources in a specific namespace.
 - The Cluster Role grants permissions to users or service accounts to access resources across all namespaces in the kubernetes cluster.
-- The role associated to a user or service account is done using Role Bindings and Cluster Role Bindings. 
+- The role associated to a user or service account is done using Role Bindings and Cluster Role Bindings.
 - The user or service account gets all the permissions defined in the role or cluster role associated with it using role bindings or cluster role bindings.
 - The role takes care of the permission and the role binding takes care of associating the role to a user or service account.
 - Example of Role:
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -913,7 +959,9 @@ rules:
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 ```
+
 - Example of Role Binding:
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -929,8 +977,10 @@ roleRef:
   name: pod-reader
   apiGroup: rbac.authorization.k8s.io
 ```
+
 ### How to create a free openshift Cluster:
-- Go to google and search for openshift sandbox 
+
+- Go to google and search for openshift sandbox
 - Proceed to https://developers.redhat.com/developer-sandbox?source=sso
 - Login with your red hat account. If you dont have one create a new account.
 - You are using a shared cluster with a dedicated namespace for you.
@@ -950,7 +1000,8 @@ roleRef:
      oc version
   ```
 
-### Kubernetes Monitoring: 
+### Kubernetes Monitoring:
+
 - Montioring is a lot easier with just one kubernetes cluster. However when you have multiple clusters across multiple regions and multiple cloud providers monitoring becomes a challenge.
 - As the number of clusters increases the complexity of monitoring also increases.
 - Some of the popular monitoring tools for kubernetes are:
@@ -966,23 +1017,29 @@ roleRef:
 - prometheus also allows for alerting based on the metrics collected. You can define alerting rules in prometheus and configure alertmanager to send alerts via email, slack, pagerduty, etc.,
 
 ![pic3](screenshots/pic3.png)
+
 - The inbuild kubernetes api server exposes some metrics which can be scraped by prometheus server.
 - Grafana retrieves and displays the data stored in prometheus in the form of dashboards and graphs.
 - Grafana supports multiple data sources including prometheus, elasticsearch, influxdb, etc.,
 - To install prometheus you can either use helm or operators
 - operators offers more advanced features and is the recommended way to install prometheus in kubernetes.
 - To install prometheus using operators follow the instructions provided in the official prometheus operator github repo:
+
   ```bash
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
   ```
+
   - To install prometheus using helm follow the instructions provided in the official prometheus helm chart github repo:
   - First ensure that you have helm installed in your local machine.
   - To install helm go to https://helm.sh/docs/intro/install/ and follow the instructions provided there.
   - Commands are provided below for installing helm in windows using winget:
+
   ```bash
   winget install Helm.Helm
-  ``` 
+  ```
+
   - Once you have helm installed you can install prometheus using the following commands:
+
   ```bash
   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
   helm repo update
@@ -990,20 +1047,25 @@ roleRef:
   ```
 - Now run kubectl get pods -A to verify all the prometheus pods are running.
 - You should use the kubectl expose command to expose the prometheus server as a service of type load balancer or nodeport in a production environment.
+
   ```
   kubectl expose service prometheus-server --type=NodePort --target-port 9090 --name=prometheus-service
   ```
 - Now run the service command to get the nodeport assigned to the prometheus server.
+
   ```
   kubectl get services
   ```
-- To access the new prometheuse service rune the command 
+- To access the new prometheuse service rune the command
+
   ```
   minikube service prometheus-service --url
   ```
 - Now you can access the prometheus server using the URL provided by the above command.
 - **prometheus-kube-state-metrics** is a service that listens to the Kubernetes API server and generates metrics about the state of the objects. It is an add-on service that is deployed alongside Prometheus to provide additional insights into the state of the Kubernetes cluster.
+
 #### Installing Grafana
+
 - To install grafana you can either use helm or operators
 - To install grafana using helm follow the instructions provided in the official grafana helm chart github repo:
   ```bash
@@ -1016,17 +1078,17 @@ roleRef:
 - To do this on the web ui go to data sources and add prometheus as a data source.
 - Select prometheus from the list of data sources and provide the prometheus server URL.
 - Provide the ip of the prometheus server and the port number.
-- Run kubectl get services to get the prometheus server ip and port number.
-- mine service was called prometheus-server and the port number was 80 so the url will be http://prometheus-server:80
+- Run **kubectl get services** to get the prometheus server ip and port number.
+- My service was called **prometheus-server** and the port number was **80** so the url will be **http://prometheus-server:80**
 - Save and test the data source.
-- Now you can create dashboards in grafana using the metrics stored in prometheus. 
+- Now you can create dashboards in grafana using the metrics stored in prometheus.
 - Go to dashboards and create a new dashboard.
 - Select discard changes when prompted
-- Enter the number 3662 (This is a standard template for grafana) in the query boix and select load
-- Provide a name for the dashboard and select the prometheus data source and import. 
+- Enter the number 3662 (This is a standard template for grafana) in the query box and select load
+- Provide a name for the dashboard and select the prometheus data source and import.
 - This creates the Grafana dashboard for kubernetes cluster monitoring.
-- Thye kube state metrics provides detailed information about the state of the kubernetes objects such as deployments, pods, services, etc.,
-- You can create custom dashboards in grafana using the metrics provided by kube state metrics. 
+- The kube state metrics provides detailed information about the state of the kubernetes objects such as deployments, pods, services, etc.,
+- You can create custom dashboards in grafana using the metrics provided by kube state metrics.
 - You can expose the kube state metrics buy running the following command:
   ```bash
   kubectl expose service prometheus-kube-state-metrics --type=NodePort --target-port=8080 --name=prometheus-kube-state-metrics-external
@@ -1034,18 +1096,17 @@ roleRef:
 - Remember grafan uses the info from prometheus but gives you the information in a better visualized way using dashboards and graphs.
 
 ### Custom Resources:
-- what is a custom resource definition or CRD?
+
+- What is a custom resource definition or CRD?
 - A Custom Resource Definition (CRD) is a powerful feature in Kubernetes that allows you to extend the Kubernetes API by adding your own custom resources. This means you can define your own resource types, which behave like built-in Kubernetes resources (such as Pods, Services, etc.) and can be managed using the same Kubernetes tools and APIs.
 - This can happen if you feel like the existing kubernetes resources do not meet your requirements.
 - For example, you might want to create a custom resource to manage a specific type of application or service that is not natively supported by Kubernetes.
 - Deploying the custom resource and custom controller is the responisibility of the devops engineer.
 - A custom resource defintion is defining a new api object in kubernetes.
 - This is done through a yaml file which defines the custom resource.
-- Regular objects in kubernetes like pods or deployments are validated by the resource definition while custom resources are validated by the custom resource definition.
+- Regular objects in kubernetes like pods or deployments are validated by the **resource definition** while custom resources are validated by the custom resource definition.
 - The customer kubernetes controller is deployed in your cluster to manage the lifecycle of the custom resources.
 - This watches for the custom resources and takes necessary actions based on the state of the custom resources.
 - For example if you create a custom resource to manage a database, the custom controller can watch for the custom resource and create a database instance when a new custom resource is created.
 - The custom controller is deployed by the devops engineer in the kubernetes cluster.
 - A popular of writing a custom controller is using golang or python
-
-
