@@ -49,12 +49,20 @@
 - A node group is one or more worker nodes that share the same configuration, such as instance type, AMI, and scaling policies.
 - You can create and manage node groups using eksctl or the AWS Management Console.
 - The worker nodes run in our AWS account and connect to our **clusters control plane using the cluster API server endpoint**.
+- The ec2 instances are deployed  in a autoscaling group across multiple availability zones for high availability.
 ##### Fargate Profiles:
 - Fargate profiles allow you to run Kubernetes pods on AWS Fargate, which is a serverless compute engine for containers.
 - Instead of EC2 instances, we run our application workloads on serverless Fargate profiles.
+- Fargate is a technology that provides on-demand, right-sized compute capacity for containers without the need to manage the underlying infrastructure.
+- With Fargate we no lo nger have to provision, configure, or scale clusters of virtual machines to run containers.
+- Each pod running on fargate has its own isolation boundary and does not share the underlying kernel, CPU resources, memory, or elastic network interface with other pods.
+- AWS specifically built fargate controllers that recognize the pods belonging to fargate and schedules them on fargate profiles
+- **Fargate profiles only run on private subnets within the VPC.**
 ##### VPC:
 - With AWS VPC we follow secure networking standards which will allow us to run production workloads on EKS.
-- **Fargate profiles only run on private subnets within the VPC.**
+- EKS uses AWS vpc network policies to restrict traffic between control plane and components within a single cluster
+- Control plane components for EKS cluster cannot view view or receive communication from another cluster or other AWS accounts, except as authorized with kubernetes role-based access control (RBAC) and IAM policies.
+- This secure and highly available configuration makes EKS reliable anbd recommended for production workloads
 
 ### How does EKS work?
 
