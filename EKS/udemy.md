@@ -45,18 +45,21 @@
 - Its a managed service by AWS, meaning AWS takes care of the availability and scalability of the control plane.
 - In regular kubernetes setup, you would have to manage the control plane yourself.
 ##### EKS Worker Nodes and Node Groups:
-- Worker nodes are the EC2 instances that run your containerized applications.
+- Worker nodes are the EC2 instances that run your containerized applications. 
+- A node group is one or more worker nodes that share the same configuration, such as instance type, AMI, and scaling policies.
+- You can create and manage node groups using eksctl or the AWS Management Console.
+- The worker nodes run in our AWS account and connect to our **clusters control plane using the cluster API server endpoint**.
 ##### Fargate Profiles:
 - Fargate profiles allow you to run Kubernetes pods on AWS Fargate, which is a serverless compute engine for containers.
 - Instead of EC2 instances, we run our application workloads on serverless Fargate profiles.
 ##### VPC:
 - With AWS VPC we follow secure networking standards which will allow us to run production workloads on EKS.
-- Fargate profiles only run on private subnets within the VPC.
+- **Fargate profiles only run on private subnets within the VPC.**
 
 ### How does EKS work?
 
 ![EKS Architecture](../Kubernetes/screenshots/pic4.png)
-- EK
+- EKS
 
 
 
