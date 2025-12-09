@@ -135,6 +135,7 @@
 ### Docker Fundamentals for EKS:
 - Docker is a platform that allows developers to easily create, deploy, and run applications in containers
 ### Kubernetes Fundamentals: 
+- The container runtime is found in both the control plane and worker nodes.
 - In eks we have the eks controller manager and fargate controller that manage the worker nodes and fargate profiles respectively.
 - The worker nodes still have kubelet, kube-proxy and container runtime installed on them.
 - eks lets on focus on deploying and managing applications rather than managing the underlying infrastructure.
