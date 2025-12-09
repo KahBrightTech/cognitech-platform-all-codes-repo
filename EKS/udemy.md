@@ -159,12 +159,96 @@
 - They are used to pull data required by the main container, perform logging, or handle other auxiliary tasks.
 - They also help push data from the main container to external systems.
 - They can also server as proxies for the main container.
+- when app is growing scale the number of pods rather than increasing the number of containers in a pod.
 ##### K8s pods demo:
+###### Kubeconfig file:
+The kubeconfig file is used to configure access to Kubernetes clusters. It contains:
+Authentication & Authorization:
+Cluster API server endpoints (URLs)
+Certificate authority data for secure connections
+User credentials (certificates, tokens, or authentication provider configs)
+Configuration Details:
+Clusters: List of Kubernetes clusters you can connect to (name, server URL, CA cert)
+Users: Authentication credentials for different users/service accounts
+Contexts: Combinations of cluster + user + namespace that define "where" and "as whom" you're working
+Current-context: Which context is active (which cluster you're currently talking to)
+What it enables:
+Switch between multiple Kubernetes clusters (dev, staging, prod)
+Use different credentials for different clusters
+Set default namespaces per context
+Allow kubectl to know which cluster to send commands to
+- Each team member can have their own kubeconfig file with access to specific clusters.
+- The kubeconfig file is typically located at ~/.kube/config on Linux and macOS,
+- to generate the kubeconfig file for an EKS cluster, you can use the AWS CLI command:
+```bash
+aws eks update-kubeconfig --region region-code --name cluster-name
+```
 
+- Make sure that your kubeconfig file located at `C:\Users\your-username\.kube\config` is configured to use the correct EKS cluster context.
+- If not run this command to update it:
 
+```bash
+aws eks update-kubeconfig --region us-east-1 --name "eks cluster name"
+# Example:
+aws eks update-kubeconfig --region us-east-1 --name int-preproduction-use1-shared-eks-cluster-eks-cluster
+```
 
+###### Creating a pod using kubectl:
 
+- Run this command to check the nodes
+```kubectl get nodes```
+- Run this command to create a new pod
+```
+kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
+```
+- You can use the describe pod command to get detailed information about the pod
+```kubectl describe pod my-first-pod```
+- This information can be found on the console under the pods section of the EKS cluster. 
+- Go to the eks cluster and under resource select  pods and select the namespace in which the pod is created, by default its created in the default namespace.
+- To check the logs of the pod, run:
+```kubectl logs my-first-pod```
+- To delete the pod, run:
+```kubectl delete pod my-first-pod```
 
+##### K8s service demo:
+- A kubernetes service is an abstraction that defines a logical set of pods and a policy by which to access them.
+- We can expose an application running on a set of pods using different types of services.
+- The most common types of services are:
+  1. ClusterIP: Exposes the service on a cluster-internal IP. This type makes the service only reachable from within the cluster.
+  2. NodePort: Exposes the service on each Node's IP at a static port (the NodePort). This type makes the service accessible from outside the cluster using <NodeIP>:<NodePort>. You cannot specify the nodeport when creating the service in an imperative way using kubectl. It will be automatically assigned from a range of ports (default: 30000-32767).
+  3. LoadBalancer: Exposes the service externally using a cloud provider's load balancer. This type creates an external load balancer that routes traffic to the service.
+
+###### NodePort Service Demo:
+- what are the different ports in kubernetes service?
+  1. Target Port: The port on which the application is running inside the pod.
+  2. Port: The port on which the service is exposed inside the cluster. The service listens on this port and forwards traffic to the target port of the pods.
+  3. NodePort: The port on which the service is exposed on each node in the cluster. Worker nodes listen on this port and forward traffic to the service.
+- After creating the pod, run this command to create a NodePort service:
+```kubectl expose pod my-first-pod --type=NodePort --name=my-first-service --port=80 --target-port=80
+```
+- This command creates a NodePort service named "my-first-service" that exposes port 80 and forwards traffic to port 80 of the "my-first-pod" pod.
+- To get the details of the service, run:
+```kubectl get service my-first-service```
+- This command displays the details of the service, including the NodePort assigned to it.
+- To access the service from outside the cluster, use the public IP address of any worker node and the NodePort assigned to the service.
+- You can find the public IP addresses of the worker nodes in the EC2 console.
+- To find out what node the pod is running on, run:
+```kubectl get pod my-first-pod -o wide```
+- To access the application on a browser get the public ip of the node and the nodeport assigned to the service.
+- For example, if the public IP of the node is 54.210.123.45 and the NodePort assigned to the service is 30080, you can access the application using the URL:
+```http://54.210.123.45:30080```
+- To get the nodeport of the service, run:
+```kubectl get service my-first-service -o jsonpath='{.spec.ports[0].nodePort}'```
+- Make sue that the node security group allows inbound traffic on the nodeport from your IP address.
+- The above information can also be found on the console under the services section of the EKS cluster.
+- You are able to access the application on the other node as well since the service is exposed on all nodes in the cluster.
+- To view the pod logs , run:
+```kubectl logs my-first-pod```
+- To view the logs in real-time, run:
+```kubectl logs my-first-pod -f```
+- To get the yaml configuration of the pod, run:
+```kubectl get pod my-first-pod -o yaml```
+- This provides the complete configuration of the pod in yaml format.
 
 
 
