@@ -250,6 +250,8 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 ```kubectl get pod my-first-pod -o yaml```
 - This provides the complete configuration of the pod in yaml format.
 
+- Ended on replica sets. 
+
 
 
 
