@@ -67,7 +67,98 @@
 ### How does EKS work?
 
 ![EKS Architecture](../Kubernetes/screenshots/pic4.png)
-- EKS
+
+#### Create your first EKS Cluster:
+- To create an EKS cluster using eksctl, run the following command:
+```
+  eksctl create cluster --name=eksdemo1 --region=us-east-1 --zones=us-east-1a,us-east-1b --without-nodegroup
+```
+- This command creates an EKS cluster named "eksdemo1" in the "us-east-1" region, spanning the specified availability zones, without creating a node group.
+- To verify that the cluster has been created, run:
+```aws eks --region us-east-1 list-clusters```
+- This command lists all the EKS clusters in the specified region.
+- If you dont specify the region, it will use the default region set in your AWS CLI configuration.
+- This takes about 15-20 minutes to create the cluster.
+- This command also creates a VPC with public and private subnets, internet gateway, NAT gateway, and route tables.
+- Once the cluster is created, eksctl automatically configures your kubectl context to use the new cluster.
+- To check the kubectl context, run:
+```kubectl config get-contexts```
+- This command lists all the kubectl contexts and highlights the current context.
+- The kubernetes context contains information about the cluster, user, and namespace.
+- To view the details of the current context, run:
+```kubectl config view --minify```  
+- To view the clusters created in EKS, run:
+```eksctl get cluster```
+##### Create the IAM OIDC Provider:
+- To enable and use AWS roles for kubernetes service accounts on our EKS cluster we must create and associate OIOC provider with our EKS cluster.
+- To create an IAM OIDC provider for our EKS cluster, run the following command:
+```eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster eksdemo1 --approve```
+- This command associates an IAM OIDC provider with the specified EKS cluster in the given region.
+- To verify that the OIDC provider has been created, run:
+```aws iam list-open-id-connect-providers```
+- This command lists all the IAM OIDC providers in your AWS account.
+- **This command is now redundant as eksctl automatically creates the OIDC provider when creating the EKS cluster.** 
+#### Create EKS Managed Nodes and IAM OIDC Provider:
+##### Create EKS Managed Node Group:
+- To create an EKS managed node group, run the following command:
+```eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=shared-key-pair --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access 
+```
+- This command creates a managed node group named "eksdemo1-ng-public1" in the "eksdemo1" cluster, with t3.medium instance type, 2 initial nodes, minimum 2 nodes, maximum 4 nodes, 20 GB volume size, SSH access using the specified public key, and various IAM permissions for the node group.
+      --asg-access                  enable IAM policy for cluster-autoscaler 
+      --external-dns-access         enable IAM policy for external-dns
+      --full-ecr-access             enable full access to ECR
+      --appmesh-access              enable full access to AppMesh
+      --appmesh-preview-access      enable full access to AppMesh Preview
+      --alb-ingress-access          enable full access for alb-ingress-controller
+      --install-neuron-plugin       install Neuron plugin for Inferentia and Trainium nodes (default true)
+      --install-nvidia-plugin       install Nvidia plugin for GPU nodes (default true)
+      --nodegroup-parallelism int   Number of self-managed or managed nodegroups to create in parallel (default 8)
+- All the above permissions can be seen in the IAM role created for the EC2 instances in the node group.
+- These permissions allow the worker nodes to interact with other AWS services as needed.
+- These can also be added later to the node group IAM role if needed.
+- managed node groups are automatically updated and maintained by AWS, making it easier to manage the worker nodes in your EKS cluster.
+- The security group created for the node group allows inbound traffic on port 22 (SSH) from anywhere on ipv4 and ipv6. 
+- Its called remote access security group.
+- To verify that the node group has been created, run:
+```eksctl get nodegroup --cluster=eksdemo1 --region=us-east-1```
+- This command lists all the node groups in the specified EKS cluster and region.
+- On the console you can find the nodegroup under the EKS cluster compute section
+- To view the EC2 instances created for the node group, go to the EC2 console and check for instances with the tag "eks:cluster-name" set to "eksdemo1" and "eks:nodegroup-name" set to "eksdemo1-ng-public1".
+- To check the kubernetes nodes, run:
+```kubectl get nodes```
+#### Delete EKS Cluster and Node Group:
+- To delete the EKS managed node group, run the following command:
+```eksctl delete nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1```
+- This command deletes the specified node group from the given EKS cluster and region. This should be done before deleting the cluster.
+- To delete the EKS cluster, run the following command:
+```eksctl delete cluster --name=eksdemo1 --region=us-east-1```
+### Docker Fundamentals for EKS:
+- Docker is a platform that allows developers to easily create, deploy, and run applications in containers
+### Kubernetes Fundamentals: 
+- In eks we have the eks controller manager and fargate controller that manage the worker nodes and fargate profiles respectively.
+- The worker nodes still have kubelet, kube-proxy and container runtime installed on them.
+- eks lets on focus on deploying and managing applications rather than managing the underlying infrastructure.
+#### Imperative vs Declarative:
+- Imperative approach involves giving specific commands to achieve a desired state.
+- Declarative approach involves defining the desired state of the system and letting the system figure out how to achieve that state.
+- Kubernetes uses a declarative approach, where we define the desired state of our applications and the system works to maintain that state.
+#### Kubernetes pods: 
+- Kubernestes goal is to deploy our applications in the form of containers on worker nodes in a k8s cluster.
+- A pod is the smallest deployable unit in kubernetes
+- The containers are not deployed directly on the worker nodes, instead they are deployed inside pods.
+- A pod can contain one or more containers that share the same network namespace and storage volumes.
+- A pod is a single instance of a running process in our cluster.
+- Pods are ephemeral, meaning they can be created, destroyed, and recreated as needed.
+- Its not good practice to have multiple containers of the same kind in a single pod.
+- for instance 2 nginx containers in a single pod is not a good practice.
+- Instead create multiple pods with a single nginx container in each pod.
+- You can have multiple containers in thesame pod provided they are not of thesame kind and they work together to achieve a common goal.
+- For instance helper containers that assist the main container in the pod.
+- Helper containers are also known as sidecar containers.
+- They are used to pull data required by the main container, perform logging, or handle other auxiliary tasks.
+- They also help push data from the main container to external systems.
+- They can also server as proxies for the main container.
+##### K8s pods demo:
 
 
 
