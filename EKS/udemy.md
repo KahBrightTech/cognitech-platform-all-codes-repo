@@ -239,7 +239,7 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 ```http://54.210.123.45:30080```
 - To get the nodeport of the service, run:
 ```kubectl get service my-first-service -o jsonpath='{.spec.ports[0].nodePort}'```
-- Make sue that the node security group allows inbound traffic on the nodeport from your IP address.
+- Make sure that the node security group allows inbound traffic on the nodeport from your IP address.
 - The above information can also be found on the console under the services section of the EKS cluster.
 - You are able to access the application on the other node as well since the service is exposed on all nodes in the cluster.
 - To view the pod logs , run:
