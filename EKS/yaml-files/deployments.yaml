@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: it
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: it
+  template:
+    metadata:
+      labels:
+        app: it
+    spec:
+      containers:
+      - name: it
+        image: njibrigthain100/brigthain:it
+        ports:
+        - containerPort: 8080

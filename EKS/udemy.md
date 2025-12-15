@@ -250,9 +250,132 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 ```kubectl get pod my-first-pod -o yaml```
 - This provides the complete configuration of the pod in yaml format.
 
-- Ended on replica sets. 
+#### ReplicaSets:
+- A ReplicaSet is a Kubernetes resource that ensures a specified number of pod replicas are running at any given time.
+- It monitors the pods and automatically creates or deletes pods to maintain the desired number of replicas.
+- ReplicaSets are typically used to ensure high availability and scalability of applications running in a Kubernetes cluster.
+- ReplicaSets are usually created and managed by Deployments, which provide additional features such as rolling updates and rollbacks.
+- **Labels and selectors** are used to identify and manage the pods that belong to a ReplicaSet.
+- So a combination of replicasets and services help in load balancing and high availability of applications in a kubernetes cluster.
+- The service distributes traffic across the multiple pod replicas managed by the ReplicaSet.
+##### ReplicaSet Demo:
+- To create a ReplicaSet, we first need to create a yaml file that defines the Replica
+- Set configuration. Here is an example of a ReplicaSet yaml file named `my-replicaset.yaml`:
+```apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: my-replicaset
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app
+        image: my-app-image
+        ports:
+        - containerPort: 80
+````
+- To expose the replicaset as a service we can either run the cli command shown below or create a service yaml file.
+```kubectl expose rs my-replicaset --type=NodePort --name=my-replicaset-service --port=80 --target-port=80```
+- To expose it using the yaml file create a file named `my-replicaset-service.yaml` with the following content:
+```apiVersion: v1
+kind: Service
+metadata:
+  name: my-replicaset-service
+spec:
+  type: NodePort
+  selector:
+    app: my-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+```
+- This exposes the ReplicaSet as a NodePort service named "my-replicaset-service" that listens on port 80 and forwards traffic to port 80 of the pods managed by the ReplicaSet.
+- In this case the request gets distributed across the 3 pod replicas created by the ReplicaSet.
+- To verify if the replicaset maintains the pods as expected, we can delete one of the pods and check if the replicaset creates a new pod to maintain the desired number of replicas.
+- First get the list of pods created by the replicaset using the command:
+```kubectl get pods -o wide```
+- This command lists all the pods 
+- To delete one of the pods, run:
+```kubectl delete pod <pod-name>```
+- Replace `<pod-name>` with the name of the pod you want to delete.
+- After deleting the pod, run the command again to get the list of pods:
+```kubectl get pods -o wide```
+- You should see that a new pod has been created by the ReplicaSet to maintain the desired number of replicas.
+- We can scale our replica set by changing the replicas count in the yaml file and applying the changes using the command:
+```kubectl apply -f my-replicaset.yaml```
+- **Important concept**: services dont target replicasets by names but rather pods by using labels and selectors.
 
-
+#### Deployments:
+- A Deployment is a higher-level Kubernetes resource that manages ReplicaSets and provides declarative updates to applications.
+- Deployments allow you to define the desired state of your application, including the number of replicas, the container image to use, and other configuration details.
+- When you create a Deployment, Kubernetes automatically creates a ReplicaSet to manage the pods for that Deployment.
+- Deployments provide features such as rolling updates, rollbacks, and scaling, making it easier to manage applications in a Kubernetes cluster.
+- You can also pause and resume deployments, allowing you to control the rollout of updates to your application.
+- **Clean up policy** is another important feature of deployments that helps manage the lifecycle of ReplicaSets and pods. This policy determines how many old ReplicaSets and pods are retained when a new deployment is made.
+- By default, Kubernetes retains all old ReplicaSets and pods, which can lead to resource consumption and clutter in the cluster.
+- However, you can configure the clean up policy to limit the number of old ReplicaSets and pods that are retained.
+- This helps free up resources and keeps the cluster clean and organized.
+- **Canary deployments** are a deployment strategy that allows you to release new versions of your application to a small subset of users before rolling it out to the entire user base.
+- This approach helps minimize the impact of potential issues with the new version by limiting exposure.
+- In Kubernetes, canary deployments can be implemented using Deployments and Services.
+##### Deployment Demo:
+- To create a deployment via the cli you can run the command:
+```kubectl create deployment my-deployment --image=njibrigthain100/brigthain:it```
+- This command creates a deployment named "my-deployment" using the specified container image.
+- To expose the deployment as a service, run:
+```kubectl expose deployment my-deployment --type=NodePort --name=my-deployment-service --port=80 --target-port=80```
+- This command creates a NodePort service named "my-deployment-service" that exposes port 80 and forwards traffic to port 80 of the pods managed by the deployment.
+- To verify the deployment and service, run:
+```kubectl get deployments```
+```kubectl get services```
+- To scale the deployment, run:
+```kubectl scale deployment my-deployment --replicas=4```
+- This command scales the deployment to 4 replicas.
+- To update the deployment with a new container image, run:
+```kubectl set image deployment/my-deployment my-deployment=njibrigthain100/brigthain:updated-image```
+- This command updates the container image of the deployment to the specified new image.
+- Kubernetes will automatically create a new ReplicaSet with the updated image and gradually replace the old pods
+- To roll back the deployment to the previous version, run:
+```kubectl rollout undo deployment/my-deployment```
+- This command rolls back the deployment to the previous version.
+- To check the rollout status of the deployment, run:
+- ```kubectl rollout status deployment/my-deployment```
+- To roll baclk to thye second last version, run:
+```kubectl rollout undo deployment/my-deployment --to-revision=2```
+- To view the revision history of the deployment, run:
+```kubectl rollout history deployment/my-deployment```
+- This command displays the revision history of the deployment, including the revision numbers and the corresponding container images.
+- To create the deployment with a yaml file create a file named `my-deployment.yaml` with the following content:
+```apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app
+        image: my-app-image
+        ports:
+        - containerPort: 80
+```
+- To create the deployment using the yaml file, run:
+```kubectl apply -f my-deployment.yaml```
 
 
 
