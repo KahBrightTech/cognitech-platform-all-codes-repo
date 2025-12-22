@@ -6,12 +6,20 @@ jQuery(document).ready(function($) {
   
           // Vars
           var modBtn  = $('#modBtn'),
+              heroContactBtn = $('#heroContactBtn'),
               modal   = $('#modal'),
               close   = modal.find('.close-btn img'),
               modContent = modal.find('.modal-content');
           
           // open modal when click on open modal button 
           modBtn.on('click', function() {
+            modal.css('display', 'block');
+            modContent.removeClass('modal-animated-out').addClass('modal-animated-in');
+          });
+          
+          // open modal when click on hero contact button
+          heroContactBtn.on('click', function(e) {
+            e.preventDefault();
             modal.css('display', 'block');
             modContent.removeClass('modal-animated-out').addClass('modal-animated-in');
           });

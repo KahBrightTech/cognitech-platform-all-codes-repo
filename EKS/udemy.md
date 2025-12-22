@@ -193,13 +193,19 @@ aws eks update-kubeconfig --region us-east-1 --name "eks cluster name"
 aws eks update-kubeconfig --region us-east-1 --name int-preproduction-use1-shared-eks-cluster-eks-cluster
 ```
 
+###### Creating a namespace using kubectl:
+- Run this command to create a new namespace
+```kubectl create namespace hway```
+- To verify the namespace has been created, run:
+```kubectl get namespaces```
+
 ###### Creating a pod using kubectl:
 
 - Run this command to check the nodes
 ```kubectl get nodes```
 - Run this command to create a new pod
 ```
-kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
+kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife 
 ```
 - You can use the describe pod command to get detailed information about the pod
 ```kubectl describe pod my-first-pod```
@@ -339,12 +345,14 @@ spec:
 - To scale the deployment, run:
 ```kubectl scale deployment my-deployment --replicas=4```
 - This command scales the deployment to 4 replicas.
-- To update the deployment with a new container image, run:
-```kubectl set image deployment/my-deployment my-deployment=njibrigthain100/brigthain:updated-image```
+- To update the deployment with a new container image, first find the container name:
+```kubectl get deployment dashboard -o jsonpath='{.spec.template.spec.containers[*].name}'```
+- Then update the image using the correct container name:
+```kubectl set image deployment/dashboard brigthain=njibrigthain100/brigthain:hwv2 --record=true```
 - This command updates the container image of the deployment to the specified new image.
 - Kubernetes will automatically create a new ReplicaSet with the updated image and gradually replace the old pods
 - To roll back the deployment to the previous version, run:
-```kubectl rollout undo deployment/my-deployment```
+```kubectl rollout undo deployment/dashboard```
 - This command rolls back the deployment to the previous version.
 - To check the rollout status of the deployment, run:
 - ```kubectl rollout status deployment/my-deployment```
@@ -376,8 +384,14 @@ spec:
 ```
 - To create the deployment using the yaml file, run:
 ```kubectl apply -f my-deployment.yaml```
+- Kubernetetes deployment typically use rolling update strategy by default to update the application with zero downtime.
+- In a rolling update, the deployment gradually replaces old pods with new pods, ensuring that at least a minimum number of pods are always available to serve traffic.
+- This approach allows for a smooth transition between application versions without disrupting service availability.- You can customize the rolling update strategy by specifying parameters such as `maxUnavailable` and `maxSurge` in the deployment yaml file.
+- `maxUnavailable` specifies the maximum number of pods that can be unavailable during the update process, while `maxSurge` specifies the maximum number of additional pods that can be created during the update process.
+- By adjusting these parameters, you can control the speed and impact of the rolling update on your application.
+- During an update a new replicaset is created with the new pod template and the old replicaset is scaled down gradually until all the pods are replaced with the new ones.
 
-
+- Ended on setp 38
 
 
 
