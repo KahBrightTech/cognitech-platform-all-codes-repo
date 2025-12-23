@@ -524,7 +524,19 @@ http://<node1-public-ip>:<Node-Port>/hello
 - To apply the changes and create or update the deployment, run:
 ```kubectl apply -f my-deployment.yaml```
 - This command creates or updates the deployment based on the configuration defined in the yaml file.
-
-
+- This documentation explains how to create a simple pod using a yaml file.
+- https://kubernetes.io/docs/concepts/workloads/pods/
+- The top level objects in kubernetes are apiversion, kind, metadata and spec.
+- apiversion: specifies the version of the kubernetes api being used to create the object.
+- kind: specifies the type of object being created (pod, deployment, service, etc). 
+- metadata: contains information about the object such as name, namespace, labels, and annotations.
+- spec: defines the desired state of the object, including configuration details such as container images, ports, volumes, and resource requirements.
+- In the metadata section the name and the labels are the most important fields.
+- The name is used to uniquely identify the object within the namespace.
+- Labels are key-value pairs that are used to organize and select objects in kubernetes.
+- The namespace is used to group related objects together and provide a scope for names. This is also set in the metadata section.
+- The spec section contains the configuration details of the object.
+- After writing the yaml file we can create the object using the command:
+```kubectl apply -f pod.yaml```
 
 

@@ -1,12 +1,49 @@
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: hway-service
+#   labels:
+#     app: hway # Used to filter the service
+# spec:
+#   type: NodePort # Type of service
+#   selector:
+#     app: hway # Selects pods with this label
+#   ports:
+#   - name: http
+#     port: 80 # Service port
+#     targetPort: 80 # Container port to forward to
+#     nodePort: 30007 # Node port for external access. This can be defined here but cannot using the cli
+---
+
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: hway-service
+#   labels:
+#     app: hway-app2 # Used to filter the service
+# spec:
+#   type: NodePort # Type of service
+#   selector:
+#     app: hway-app2 # Selects pods with this label
+#   ports:
+#   - name: http
+#     port: 80 # Service port
+#     targetPort: 80 # Container port to forward to
+#     nodePort: 31232 # Node port for external access. This can be defined here but cannot using the cli 
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-replicaset-service
+  name: hway-svc-deployment
+  labels:
+    app: hway-app3 # Used to filter the service
 spec:
-  type: NodePort
+  type: NodePort # Type of service
   selector:
-    app: it
+    app: hway-app3 # Selects pods with this label
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
+  - name: http
+    port: 80 # Service port
+    targetPort: 80 # Container port to forward to
+    nodePort: 31233 # Node port for external access. This can be defined here but cannot using the cli 

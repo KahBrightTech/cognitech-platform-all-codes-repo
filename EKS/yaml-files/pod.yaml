@@ -1,10 +1,14 @@
-apiVersion: v1
-kind: Pod
+apiVersion: v1 # The version of the Kubernetes API being used (String)
+kind: Pod # What type of object is being created (String)
 metadata:
+  # This is a dictionary
   name: hway
+  labels:
+    app: hway
 spec:
   containers:
+  # The container here is a list, so you can define multiple containers in a single pod
   - name: hway
-    image: njibrigthain100/brigthain:hwv3
+    image: njibrigthain100/brigthain:hwv1
     ports:
     - containerPort: 80

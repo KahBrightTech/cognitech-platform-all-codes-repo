@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: it
+  name: hway-deployment
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
-      app: it
+      app: hway-app3
   template:
     metadata:
       labels:
-        app: it
+        app: hway-app3
     spec:
       containers:
-      - name: it
-        image: njibrigthain100/brigthain:it
+      - name: hway
+        image: njibrigthain100/brigthain:hwv2
         ports:
-        - containerPort: 8080
+        - containerPort: 80
