@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: <DOCKERHUB_USERNAME>/ecommerce-web:latest
+        image: njibrigthain100/brigthain:ecomm-web
         ports:
         - containerPort: 80
 ---
@@ -29,25 +29,25 @@ spec:
     targetPort: 80
   selector:
     app: ecommerce-web
-
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ecommerce-ingress
   annotations:
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:REGION:ACCOUNT_ID:certificate/XXXXXXXX
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:730335294148:certificate/1e081677-3567-4cf2-9739-b11927661038
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/scheme: internet-facing
 spec:
   ingressClassName: alb
   rules:
-    - host: your-domain.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: ecommerce-web
-                port:
-                  number: 80
+  - host: cognitechllc.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ecommerce-web
+            port:
+              number: 80

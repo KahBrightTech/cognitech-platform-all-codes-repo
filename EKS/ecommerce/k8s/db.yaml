@@ -29,6 +29,18 @@ spec:
       - name: db-init
         configMap:
           name: db-init-sql
+
+# SecretProviderClass example (apply separately)
+# apiVersion: secrets-store.csi.x-k8s.io/v1
+# kind: SecretProviderClass
+# metadata:
+#   name: aws-secretsmanager-db
+# spec:
+#   provider: aws
+#   parameters:
+#     objects: |
+#       - objectName: "ecommerce-db-creds"
+#         objectType: "secretsmanager"
 ---
 apiVersion: v1
 kind: Service

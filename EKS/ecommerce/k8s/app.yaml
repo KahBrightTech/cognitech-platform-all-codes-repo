@@ -12,27 +12,22 @@ spec:
       labels:
         app: ecommerce-app
     spec:
-      serviceAccountName: ecommerce-app-sa
       containers:
       - name: app
-        image: <DOCKERHUB_USERNAME>/ecommerce-app:latest
-        envFrom:
-        - secretRef:
-            name: ecommerce-db-secrets
+        image: njibrigthain100/brigthain:ecomm-app
+        env:
+        - name: DB_HOST
+          value: "ecommerce-db"
+        - name: DB_USER
+          value: "ecomuser"
+        - name: DB_PASS
+          value: "ecompass"
+        - name: DB_NAME
+          value: "ecomdb"
         ports:
         - containerPort: 3000
-        volumeMounts:
-        - name: secrets-store-inline
-          mountPath: "/mnt/secrets-store"
-          readOnly: true
-      volumes:
-      - name: secrets-store-inline
-        csi:
-          driver: secrets-store.csi.k8s.io
-          readOnly: true
-          volumeAttributes:
-            secretProviderClass: "aws-secretsmanager"
 ---
+
 
 # SecretProviderClass example (apply separately)
 # apiVersion: secrets-store.csi.x-k8s.io/v1

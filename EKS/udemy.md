@@ -538,6 +538,13 @@ http://<node1-public-ip>:<Node-Port>/hello
 - The spec section contains the configuration details of the object.
 - After writing the yaml file we can create the object using the command:
 ```kubectl apply -f pod.yaml```
+- You can also delete resources using the yaml file with the command:
+```kubectl delete -f pod.yaml```
+- You can also create all resource within a directory using the command:
+```kubectl apply -f ./directory-name/```
+- This command creates all the resources defined in the yaml files within the specified directory.
+- You can also delete all resources within a directory using the command:
+```kubectl delete -f ./directory-name/```
 
-
+Ended on section 6 
 
