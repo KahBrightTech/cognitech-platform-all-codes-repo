@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hway
+spec:
+  containers:
+  - name: hway
+    image: njibrigthain100/brigthain:hwv3
+    ports:
+    - containerPort: 80

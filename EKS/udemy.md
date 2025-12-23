@@ -334,7 +334,7 @@ spec:
 - In Kubernetes, canary deployments can be implemented using Deployments and Services.
 ##### Deployment Demo:
 - To create a deployment via the cli you can run the command:
-```kubectl create deployment my-deployment --image=njibrigthain100/brigthain:it```
+```kubectl create deployment my-deployment --image=njibrigthain100/brigthain:hwv1```
 - This command creates a deployment named "my-deployment" using the specified container image.
 - To expose the deployment as a service, run:
 ```kubectl expose deployment my-deployment --type=NodePort --name=my-deployment-service --port=80 --target-port=80```
@@ -348,15 +348,15 @@ spec:
 - To update the deployment with a new container image, first find the container name:
 ```kubectl get deployment dashboard -o jsonpath='{.spec.template.spec.containers[*].name}'```
 - Then update the image using the correct container name:
-```kubectl set image deployment/dashboard brigthain=njibrigthain100/brigthain:hwv2 --record=true```
+```kubectl set image deployment/my-deployment brigthain=njibrigthain100/brigthain:hwv2 --record=true```
 - This command updates the container image of the deployment to the specified new image.
 - Kubernetes will automatically create a new ReplicaSet with the updated image and gradually replace the old pods
 - To roll back the deployment to the previous version, run:
-```kubectl rollout undo deployment/dashboard```
+```kubectl rollout undo deployment/my-deployment```
 - This command rolls back the deployment to the previous version.
 - To check the rollout status of the deployment, run:
 - ```kubectl rollout status deployment/my-deployment```
-- To roll baclk to thye second last version, run:
+- To roll back to the second last version, run:
 ```kubectl rollout undo deployment/my-deployment --to-revision=2```
 - To view the revision history of the deployment, run:
 ```kubectl rollout history deployment/my-deployment```
@@ -391,17 +391,139 @@ spec:
 - By adjusting these parameters, you can control the speed and impact of the rolling update on your application.
 - During an update a new replicaset is created with the new pod template and the old replicaset is scaled down gradually until all the pods are replaced with the new ones.
 
-- Ended on setp 38
+##### Deployment Edit using kubectl:
+- This is the method mostly used to update our applications in kubernetes. 
+- To edit your deployment run the command:
+```kubectl edit deployment my-deployment --record=true```
+- This opens the deployment configuration in the default text editor.
+- Make the necessary changes to the deployment configuration, such as updating the container image or changing the number of replicas.
+- Save and close the editor to apply the changes.
 
+##### Deployment Rollback application to a previous version:
+- To roll back the deployment to the previous version, run:
+```kubectl rollout undo deployment/my-deployment```
+- This command rolls back the deployment to the previous version.
+- To check the rollout status of the deployment, run:
+- ```kubectl rollout status deployment/my-deployment```
+- To roll back to the second last version, run:
+```kubectl rollout undo deployment/my-deployment --to-revision=2```
+- To rollback to a specific revision, run:
+```kubectl rollout undo deployment/my-deployment --to-revision=<revision-number>```
+- To view the revision history of the deployment, run:
+```kubectl rollout history deployment/my-deployment```
+- To view exaclty what changed in a specific revision, run:
+```kubectl rollout history deployment/my-deployment --revision=<revision-number>```
+- Now to rollback to previous version you can simp-ly run the undo command without specifying the revision number.
+- Everytime you make a change to the deployment using the edit command a new revision is created.
+- The revision number is incremented automatically by kubernetes.
+- You can also restart the deployment to recreate all the pods without changing the deployment configuration by running:
+```kubectl rollout restart deployment/my-deployment```
 
+##### Deployment pausing and resuming deployments:
+- To pause a deployment, run:
+```kubectl rollout pause deployment/my-deployment```
+- To resume a paused deployment, run:
+```kubectl rollout resume deployment/my-deployment```
+- This is needed when you want to make **multiple changes** to the deployment configuration without triggering a rollout for each change.
+- You can pause the deployment, make all the necessary changes, and then resume the deployment to apply all the changes at once.
+- Everyytime you create a new deployment a new replicaset is created to manage the pods for that deployment.
+- The old replicaset is retained by default unless you specify a clean up policy to limit the number of old replicasets to retain.
 
+#### Services:
+- A Kubernetes Service is an abstraction that defines a logical set of pods and a policy by which to access them.
+- Services enable communication between different components of an application running in a Kubernetes cluster.
+- Services provide a stable IP address and DNS name for a set of pods, allowing other components to access them without needing to know the specific pod IP addresses.
+- Services can be exposed in different ways, such as ClusterIP, NodePort, LoadBalancer, and ExternalName, depending on the use case and requirements.
+**ClusterIP**: The default type of service that exposes the service on a cluster-internal IP. This type makes the service only reachable from within the cluster. This can be used for internal communication between different components of an application. Or for communication between frontend and backend services within the cluster.
+**NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). This type makes the service accessible from outside the cluster using <NodeIP>:<NodePort>. This can be used for development and testing purposes, where you want to access the service from outside the cluster without setting up a load balancer.
+**LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. This type creates an external load balancer that routes traffic to the service. This can be used for production workloads where you want to expose the service to the internet and distribute traffic across multiple pods for high availability and scalability.
+**ingress**: Ingress is not a type of service but rather a separate Kubernetes resource that manages external access to services in a cluster, typically HTTP/HTTPS traffic. Ingress can provide load balancing, SSL termination, and name-based virtual hosting. Ingress controllers are used to implement the ingress resource and route traffic to the appropriate services based on defined rules. Its advanced load balancing which provides context path based routing, SSL, SSL redirects and many more features.
+**ExternalName**: Maps a service to a DNS name outside the cluster. This type can be used to access external services from within the cluster using a consistent DNS name. These are used to access externally hosted apps in kubernetes cluster. For instance AWS RDS database endpoint is to be accessed by an application running in the kubernetes cluster. We can create an externalname service that maps to the RDS endpoint and the application can use the service name to access the database.
+![pic3](screenshots/pic1.png)
 
+##### Services demo:
+- Go to the github reo and proceed to 05- Services with kubectl 
+## Step-01: Introduction to Services
+- **Service Types**
+  1. ClusterIp
+  2. NodePort
+  3. LoadBalancer
+  4. ExternalName
+- We are going to look in to ClusterIP and NodePort in this section with a detailed example. 
+- LoadBalancer Type is primarily for cloud providers and it will differ cloud to cloud, so we will do it accordingly (per cloud basis)
+- ExternalName doesn't have Imperative commands and we need to write YAML definition for the same, so we will look in to it as and when it is required in our course. 
 
+## Step-02: ClusterIP Service - Backend Application Setup
+- Create a deployment for Backend Application (Spring Boot REST Application)
+- Create a ClusterIP service for load balancing backend application. 
+```
+# Create Deployment for Backend Rest App
+kubectl create deployment my-backend-rest-app --image=stacksimplify/kube-helloworld:1.0.0 
+kubectl get deploy
 
+# Create ClusterIp Service for Backend Rest App
+kubectl expose deployment my-backend-rest-app --port=8080 --target-port=8080 --name=my-backend-service
+kubectl get svc
+Observation: We don't need to specify "--type=ClusterIp" because default setting is to create ClusterIp Service. 
+```
+- **Important Note:** If backend application port (Container Port: 8080) and Service Port (8080) are same we don't need to use **--target-port=8080** but for avoiding the confusion i have added it. Same case applies to frontend application and service. 
 
+- **Backend HelloWorld Application Source** [kube-helloworld](../00-Docker-Images/02-kube-backend-helloworld-springboot/kube-helloworld)
 
+## Step-03: NodePort Service - Frontend Application Setup
+- We have implemented **NodePort Service** multiple times so far (in pods, replicasets and deployments), even then we are going to implement one more time to get a full architectural view in relation with ClusterIp service. 
+- Create a deployment for Frontend Application (Nginx acting as Reverse Proxy)
+- Create a NodePort service for load balancing frontend application. 
+- **Important Note:** In Nginx reverse proxy, ensure backend service name `my-backend-service` is updated when you are building the frontend container. We already built it and put ready for this demo (stacksimplify/kube-frontend-nginx:1.0.0)
+- **Nginx Conf File**
+```conf
+server {
+    listen       80;
+    server_name  localhost;
+    location / {
+    # Update your backend application Kubernetes Cluster-IP Service name  and port below      
+    # proxy_pass http://<Backend-ClusterIp-Service-Name>:<Port>;      
+    proxy_pass http://my-backend-service:8080;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}
+```
+- **Docker Image Location:** https://hub.docker.com/repository/docker/stacksimplify/kube-frontend-nginx
+- **Frontend Nginx Reverse Proxy Application Source** [kube-frontend-nginx](../00-Docker-Images/03-kube-frontend-nginx)
+```
+# Create Deployment for Frontend Nginx Proxy
+kubectl create deployment my-frontend-nginx-app --image=stacksimplify/kube-frontend-nginx:1.0.0 
+kubectl get deploy
 
+# Create ClusterIp Service for Frontend Nginx Proxy
+kubectl expose deployment my-frontend-nginx-app  --type=NodePort --port=80 --target-port=80 --name=my-frontend-service
+kubectl get svc
 
+# Capture IP and Port to Access Application
+kubectl get svc
+kubectl get nodes -o wide
+http://<node1-public-ip>:<Node-Port>/hello
+
+# Scale backend with 10 replicas
+kubectl scale --replicas=10 deployment/my-backend-rest-app
+
+# Test again to view the backend service Load Balancing
+http://<node1-public-ip>:<Node-Port>/hello
+```rld Application Source** [kube-helloworld](../00-Docker-Images/02-kube-backend-helloworld-springboot/kube-helloworld)
+
+#### Kubernetes declarative approach using YAML files:
+- Instead of using the imperative commands to create kubernetes resources we can also use the declarative approach using yaml files.
+- The yaml files can be created manually or generated using the kubectl command.
+- To generate the yaml file for a deployment, run:
+```kubectl get deployment my-deployment -o yaml > my-deployment.yaml```
+- This command retrieves the configuration of the specified deployment and saves it to a yaml file named `my-deployment.yaml`.
+- You can then edit the yaml file to make any necessary changes to the deployment configuration.
+- To apply the changes and create or update the deployment, run:
+```kubectl apply -f my-deployment.yaml```
+- This command creates or updates the deployment based on the configuration defined in the yaml file.
 
 
 
