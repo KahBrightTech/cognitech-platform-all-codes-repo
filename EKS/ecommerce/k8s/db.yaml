@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-db
+  template:
+    metadata:
+      labels:
+        app: ecommerce-db
+    spec:
+      containers:
+      - name: db
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: "ecomdb"
+        - name: POSTGRES_USER
+          value: "ecomuser"
+        - name: POSTGRES_PASSWORD
+          value: "ecompass"
+        volumeMounts:
+        - name: db-init
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: db-init
+        configMap:
+          name: db-init-sql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-db
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: ecommerce-db

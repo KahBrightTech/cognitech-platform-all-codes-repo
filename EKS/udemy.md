@@ -540,3 +540,4 @@ http://<node1-public-ip>:<Node-Port>/hello
 ```kubectl apply -f pod.yaml```
 
 
+

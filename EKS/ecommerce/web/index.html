@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecommerce Shop</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        header { background: #222; color: #fff; padding: 1em; text-align: center; }
+        main { padding: 2em; }
+        .product { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; }
+        .cart { background: #f9f9f9; padding: 1em; margin-top: 2em; }
+        button { padding: 0.5em 1em; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>BrightTech Ecommerce</h1>
+    </header>
+    <main>
+        <h2>Products</h2>
+        <div id="products"></div>
+        <div class="cart">
+            <h3>Shopping Cart</h3>
+            <ul id="cart"></ul>
+            <button onclick="checkout()">Checkout</button>
+        </div>
+    </main>
+    <script>
+        let cart = [];
+        function fetchProducts() {
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(products => {
+                    const productsDiv = document.getElementById('products');
+                    productsDiv.innerHTML = '';
+                    products.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'product';
+                        div.innerHTML = `<strong>${p.name}</strong><br>Price: $${p.price}<br><button onclick='addToCart(${JSON.stringify(p)})'>Add to Cart</button>`;
+                        productsDiv.appendChild(div);
+                    });
+                });
+        }
+        function addToCart(product) {
+            cart.push(product);
+            renderCart();
+        }
+        function renderCart() {
+            const cartUl = document.getElementById('cart');
+            cartUl.innerHTML = '';
+            cart.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name} - $${item.price}`;
+                cartUl.appendChild(li);
+            });
+        }
+        function checkout() {
+            fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cart })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                cart = [];
+                renderCart();
+            });
+        }
+        fetchProducts();
+    </script>
+</body>
+</html>
