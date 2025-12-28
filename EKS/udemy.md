@@ -546,5 +546,37 @@ http://<node1-public-ip>:<Node-Port>/hello
 - You can also delete all resources within a directory using the command:
 ```kubectl delete -f ./directory-name/```
 
-Ended on section 6 
+#### EKS Secret store CSI Driver:
+##### Why was this created:
+ - The eks secret yaml is not as secured cause the secret is stored in base64 encoded format which can be easily decoded.
+ - To enhance the security of secrets in EKS clusters, AWS created the EKS Secret Store CSI Driver.
+ - This driver allows you to securely mount secrets from AWS Secrets Manager or AWS Systems Manager Parameter Store into your Kubernetes pods as files.
+ - This eliminates the need to store secrets in plain text or base64 encoded format in Kubernetes manifests
+ - The secret store csi driver synchronizes secrets from enxternal APIs and mounts them into containers as volumes. 
+ - This allows you to manage secrets in a central place like aws secrets manager and use them securely in your EKS workloads.
+ - Here you dont create a kubernetes secret object, instead you create a secret in aws secrets manager and reference it in your pod spec.
+ - This minimizes the risk of secret exposure and simplifies secret management in EKS clusters.
+ - We use a custom resource definition called SecretProviderClass to define how secrets should be fetched and mounted into pods.
+ - Next you create a pod and tell it to use the secret provider class to mount the secrets into the pod.
+ - See above for secretproviderclass.yaml and pod_with_secretsprovider.yaml files for reference.
+ - Kublet talks to the secrets store csi driver running as a daemonset on each node to fetch and mount the secrets into the pod.
+ - The secret provider then fetches the secrets from aws secrets manager and provides them to the csi driver to mount into the pod.
+ ##### Hands on demo:
+ - First create a secret in aws secrets manager with the name `my-db-credentials` and the following key-value pairs:
+   - username: admin
+   - password: Password123!
+- install the secrets store csi driver using either helm or kubectl.
+- To install secrets store csi driver using helm run the following commands:
+```helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+- Create the secretproviderclass.yaml file as shown above.
+- The secrets store csi can also be added as an addon while creating the eks cluster using eksctl.
+- Run this command to create the service account for the secrets store csi driver with the necessary iam permissions:
+```eksctl create iamserviceaccount --name ecomm-svc --namespace default --cluster int-preproduction-use1-shared-InfoGrid-eks-cluster --role-name sa-role --attach-policy-arn arn:aws:iam::730335294148:policy/eks-test-policy-for-secrets-manager --approve
+```
+- This command creates an iam service account named `ecomm-svc` in the default namespace of the specified eks cluster.
+- The service account is associated with an iam role named `sa-role` that has the specified policy attached to it.
+- This policy allows the service account to access secrets from aws secrets manager.
+- The service account is then referenced in the pod spec to allow the pod to access the secrets from aws secrets manager.
+- Create the pod_with_secretsprovider.yaml file as shown above.
+
 
