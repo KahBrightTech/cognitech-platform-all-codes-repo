@@ -579,4 +579,12 @@ http://<node1-public-ip>:<Node-Port>/hello
 - The service account is then referenced in the pod spec to allow the pod to access the secrets from aws secrets manager.
 - Create the pod_with_secretsprovider.yaml file as shown above.
 
-
+#### Hoe EKS pods access AWS Services:
+- How do EKS pods access AWS services securely without using long lived AWS access keys and secret keys?
+- For instance how do the pods access S3 buckets, dynamodb tables, sns topics, sqs queues and other aws services securely?
+- There is a concept in AWS called PIA - Pod Identity Agent.
+- The PIA is a daemonset that runs on each worker node in the eks cluster.
+- The PIA is responsible for managing the iam roles associated with the pods running on the nodes.
+- The PIA uses the aws sts assume role api to assume the iam role associated with the pod.
+- First you need to create an aws iam role.
+- So we will create a pod and try to access an S3 bucket.
