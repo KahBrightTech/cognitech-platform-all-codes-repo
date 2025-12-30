@@ -588,3 +588,203 @@ http://<node1-public-ip>:<Node-Port>/hello
 - The PIA uses the aws sts assume role api to assume the iam role associated with the pod.
 - First you need to create an aws iam role.
 - So we will create a pod and try to access an S3 bucket.
+- The PIA is available as an addon on the eks cluster
+- So to set it up we first create an iam role with the necessary permissions to access the aws resource we want the pod to access.
+- Next we credate a service account within the required namespace and associate the iam role with the service account using the pod identity assoictaion
+- Use the pods_with_pia.yaml file for testing as it has the aws cli installed. 
+- Once you have the pod created run the following command to test if it has access to the s3 bucket:
+```kubectl exec -it pod-name -- aws s3 ls s3://your-bucket-name
+```
+- for example to access a specific bucket run:
+```kubectl exec -it hway -- aws s3 ls s3://int-preproduction-use1-shared-config-bucket
+```
+What is a Kubernetes Service Account?
+A Service Account is a native Kubernetes resource that provides an identity for pods. By itself, it:
+
+✅ Exists only in Kubernetes
+✅ Provides a pod identity within the cluster
+✅ Can be used for Kubernetes RBAC
+❌ Has NO AWS permissions by default
+❌ Cannot access AWS services (S3, DynamoDB, etc.)
+
+yaml# Just a basic Kubernetes Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-app-sa
+  namespace: default
+# This pod can run but CANNOT access AWS services
+```
+
+## What is EKS Pod Identity (PIA)?
+
+**EKS Pod Identity** is an AWS feature that **links** a Kubernetes Service Account to an AWS IAM Role, giving pods AWS permissions.
+```
+┌─────────────────────────┐
+│ Kubernetes Service      │
+│ Account                 │  ←─── Pod uses this
+│ (my-app-sa)            │
+└──────────┬──────────────┘
+           │
+           │ Pod Identity Association
+           │ (created by AWS)
+           │
+           ▼
+┌─────────────────────────┐
+│ AWS IAM Role            │
+│ (with S3, DDB policies) │  ←─── Has AWS permissions
+└─────────────────────────┘
+The 3 Scenarios
+Scenario 1: Service Account ONLY (No AWS Access)
+yamlapiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: basic-sa
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  serviceAccountName: basic-sa
+  containers:
+  - name: app
+    image: myapp:latest
+Result:
+
+✅ Pod has Kubernetes identity
+❌ Pod CANNOT access AWS services
+❌ aws s3 ls will fail with "Unable to locate credentials"
+
+Scenario 2: Service Account + IRSA (Old Way)
+IRSA = IAM Roles for Service Accounts (the old method)
+hcl# Terraform
+resource "kubernetes_service_account" "app" {
+  metadata {
+    name      = "app-sa"
+    namespace = "default"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = "arn:aws:iam::123456789012:role/app-role"
+    }
+  }
+}
+Result:
+
+✅ Pod can access AWS services
+⚠️ Requires OIDC provider setup
+⚠️ More complex IAM trust policy
+⚠️ Annotation required on Service Account
+
+Scenario 3: Service Account + Pod Identity (New Way - Recommended)
+hcl# 1. Create Service Account (NO annotations needed)
+resource "kubernetes_service_account" "app" {
+  metadata {
+    name      = "app-sa"
+    namespace = "default"
+    # Notice: NO annotations!
+  }
+}
+
+# 2. Create Pod Identity Association (links SA to IAM role)
+resource "aws_eks_pod_identity_association" "app" {
+  cluster_name    = "my-cluster"
+  namespace       = "default"
+  service_account = "app-sa"
+  role_arn        = aws_iam_role.pod_role.arn
+}
+
+# 3. IAM Role with simple trust policy
+resource "aws_iam_role" "pod_role" {
+  name = "app-pod-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "pods.eks.amazonaws.com"  # Simple!
+      }
+      Action = ["sts:AssumeRole", "sts:TagSession"]
+    }]
+  })
+}
+```
+
+**Result:**
+- ✅ Pod can access AWS services
+- ✅ Simpler setup (no OIDC needed)
+- ✅ No annotations on Service Account
+- ✅ Easier to manage
+
+## Visual Comparison
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SERVICE ACCOUNT ONLY                     │
+├─────────────────────────────────────────────────────────────┤
+│ Kubernetes Service Account                                  │
+│         ↓                                                    │
+│       Pod                                                    │
+│         ↓                                                    │
+│   ❌ No AWS Access                                          │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              SERVICE ACCOUNT + IRSA (Old Way)               │
+├─────────────────────────────────────────────────────────────┤
+│ Kubernetes Service Account                                  │
+│  (with annotation: eks.amazonaws.com/role-arn)              │
+│         ↓                                                    │
+│       Pod                                                    │
+│         ↓                                                    │
+│   OIDC Provider → IAM Role                                  │
+│         ↓                                                    │
+│   ✅ AWS Access (S3, DynamoDB, etc.)                        │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│          SERVICE ACCOUNT + POD IDENTITY (New Way)           │
+├─────────────────────────────────────────────────────────────┤
+│ Kubernetes Service Account (plain, no annotations)          │
+│         ↓                                                    │
+│   Pod Identity Association (AWS resource)                   │
+│         ↓                                                    │
+│       Pod                                                    │
+│         ↓                                                    │
+│   IAM Role (simpler trust policy)                           │
+│         ↓                                                    │
+│   ✅ AWS Access (S3, DynamoDB, etc.)                        │
+└─────────────────────────────────────────────────────────────┘
+Key Differences Table
+FeatureService Account OnlyIRSAPod Identity (PIA)AWS Access❌ No✅ Yes✅ YesAnnotations Required❌ No✅ Yes❌ NoOIDC ProviderN/A✅ Required❌ Not neededSetup ComplexitySimpleComplexSimpleTrust PolicyN/AComplex (OIDC)SimpleRecommendedFor K8s-only appsLegacy✅ Current best practice
+IAM Trust Policy Comparison
+IRSA Trust Policy (Complex)
+json{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub": "system:serviceaccount:default:app-sa",
+        "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:aud": "sts.amazonaws.com"
+      }
+    }
+  }]
+}
+Pod Identity Trust Policy (Simple)
+json{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Service": "pods.eks.amazonaws.com"
+    },
+    "Action": [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+  }]
+}

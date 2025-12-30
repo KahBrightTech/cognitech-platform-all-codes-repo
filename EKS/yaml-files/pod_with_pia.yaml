@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hway
+  labels:
+    app: hway
+spec:
+  serviceAccountName: s3-access # Uncommented - this is required for Pod Identity!
+  containers:
+  - name: hway
+    image: amazon/aws-cli:latest # Changed to AWS CLI image for testing
+    command:
+    - sleep
+    - "3600"
+    ports:
+    - containerPort: 80
