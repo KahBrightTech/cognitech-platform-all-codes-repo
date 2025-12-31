@@ -1,0 +1,6 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+provisioner: ebs.csi.aws.com # This differes based on cloud provider
+volumeBindingMode: WaitForFirstConsumer #This ensures that the PV is created in the same AZ as the Pod. It can also be Immediate. With immediate, the PV is created as soon as the PVC is created, regardless of where the Pod is scheduled.

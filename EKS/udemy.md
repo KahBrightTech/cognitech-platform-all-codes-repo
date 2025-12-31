@@ -788,3 +788,423 @@ json{
     ]
   }]
 }
+- To view the IAM role associated to the service account on the console go to the access section on your eks cluster and proceed to the pod identity associations. 
+- Here you will see the list of service accounts and their associated iam roles.
+
+#### EKS Storage:
+- There are several types of EKS storages available:
+1. **EBS (Elastic Block Store) CSI Driver**: EBS is a block storage service that provides persistent storage for EKS pods. EBS volumes can be attached to individual pods and provide high-performance storage for applications that require low-latency access to data. EBS Volumes that are attached to an instance are exposed as storage volumes that persist independently from the life of the instance. The volume can be dynamically changed in size, and can be attached to any instance in the same availability zone. AWS recommends EBS for data that must be accessed quickly and requires long term persistence, such as databases, file systems, and applications that require high IOPS.
+2. **EFS (Elastic File System) CSI Driver**: EFS is a file storage service that provides shared storage for EKS pods. EFS volumes can be mounted to multiple pods simultaneously, allowing for easy sharing of data between pods.
+3. **FSx for Lustre CSI Driver**: FSx for Lustre is a high-performance file system that can be used to provide fast storage for EKS pods. FSx for Lustre is designed for applications that require high throughput and low latency access to data, such as machine learning and high-performance computing workloads.
+- The drivers are not supported on AWS Fargate yet.
+
+##### EKS EBS CSI Driver Demo:
+- When installing the ebs csi driver on the console you are asked to do thge installation via pod identity or iam role for service account (IRSA).
+- Choose the pod identity method as it is the latest and recommended way.
+- When you complete this aws automatically creates a pod identity association for the ebs csi driver service account with the necessary iam role.
+- It creates a service account named `ebs-csi-controller-sa` in the `kube-system` namespace and associates it with an iam role that has the necessary permissions to manage ebs volumes.
+- In terraform you will have to do the pod identity association manually as shown below:
+```hclresource "aws_eks_pod_identity_association" "ebs_csi" {
+  cluster_name    = var.cluster_name
+  namespace       = "kube-system"
+  service_account = "ebs-csi-controller-sa"
+  role_arn        = aws_iam_role.ebs_csi_role.arn
+}
+```
+- This is after the addon is installed on the eks cluster.
+- Notes from udemy class: 
+##### EKS Storage -  Storage Classes, Persistent Volume Claims
+
+**A StorageClass** in EKS (and Kubernetes in general) is a way to define different types of storage that can be dynamically provisioned for your applications.
+Think of it as a "storage template" that describes what kind of disk/volume you want and how it should be created.
+Why Do We Need StorageClasses?
+Without StorageClasses, you'd have to manually create EBS volumes in AWS, then manually attach them to your pods. StorageClasses automate this process - when a pod requests storage, Kubernetes automatically creates the volume for you.
+How It Works
+Pod needs storage → PersistentVolumeClaim (PVC) → StorageClass → Creates AWS EBS Volume → Mounts to Pod
+Example: StorageClass for EBS
+yamlapiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: ebs.csi.aws.com  # Uses the EBS CSI driver
+parameters:
+  type: gp3                    # EBS volume type (gp3, gp2, io1, io2, st1, sc1)
+  iops: "3000"                 # IOPS for the volume
+  throughput: "125"            # Throughput in MB/s
+  encrypted: "true"            # Encrypt the volume
+  kmsKeyId: "arn:aws:kms:..."  # Optional: Use specific KMS key
+volumeBindingMode: WaitForFirstConsumer  # Wait until pod is scheduled
+allowVolumeExpansion: true     # Allow resizing
+reclaimPolicy: Delete          # Delete volume when PVC is deleted
+
+**A PersistentVolumeClaim (PVC)** is a request for storage by a user/pod. Think of it like placing an order for disk space.
+Simple Analogy
+StorageClass = Menu at a restaurant (lists what types of storage are available)
+PersistentVolumeClaim (PVC) = Your order from the menu ("I want 10GB of fast SSD storage")
+PersistentVolume (PV) = The actual dish that arrives (the actual EBS volume created)
+Pod = You eating the food (using the storage)
+
+What Does a PVC Do?
+A PVC says: "I need X amount of storage with Y characteristics"
+Kubernetes then finds or creates storage that matches your request.
+Example PVC
+yamlapiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-database-storage
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce        # Only one pod can write at a time
+  storageClassName: gp3    # Use the gp3 StorageClass
+  resources:
+    requests:
+      storage: 20Gi        # I want 20 gigabytes
+**A ConfigMap** is a Kubernetes object that stores configuration data (non-sensitive) as key-value pairs. It lets you separate configuration from your application code.
+Simple Analogy
+Think of a ConfigMap as a settings file or environment variables file that you can share across multiple pods without hardcoding values into your container images.
+Why Use ConfigMaps?
+Without ConfigMap ❌
+yaml# Hardcoded in your pod
+containers:
+- name: app
+  image: myapp:1.0
+  env:
+  - name: DATABASE_URL
+    value: "postgres://db.example.com:5432"  # Hardcoded!
+  - name: LOG_LEVEL
+    value: "debug"  # Hardcoded!
+With ConfigMap ✅
+yaml# Stored separately, reusable, easy to update
+containers:
+- name: app
+  image: myapp:1.0
+  envFrom:
+  - configMapRef:
+      name: app-config  # Reference the ConfigMap
+Creating a ConfigMap
+Method 1: From Literal Values (Command Line)
+bashkubectl create configmap app-config \
+  --from-literal=DATABASE_URL=postgres://db.example.com:5432 \
+  --from-literal=LOG_LEVEL=debug \
+  --from-literal=MAX_CONNECTIONS=100
+Method 2: From a File
+bash# Create a config file
+cat > app.properties << EOF
+DATABASE_URL=postgres://db.example.com:5432
+LOG_LEVEL=debug
+MAX_CONNECTIONS=100
+EOF
+
+# Create ConfigMap from file
+kubectl create configmap app-config --from-file=app.properties
+Method 3: Using YAML (Most Common)
+yamlapiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: default
+data:
+  DATABASE_URL: "postgres://db.example.com:5432"
+  LOG_LEVEL: "debug"
+  MAX_CONNECTIONS: "100"
+  # You can also store entire files
+  nginx.conf: |
+    server {
+      listen 80;
+      server_name example.com;
+      location / {
+        proxy_pass http://backend:8080;
+      }
+    }
+Using ConfigMaps in Pods
+Option 1: As Environment Variables
+yamlapiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+  - name: app
+    image: myapp:1.0
+    env:
+    # Single variable from ConfigMap
+    - name: DATABASE_URL
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: DATABASE_URL
+    # Another variable
+    - name: LOG_LEVEL
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: LOG_LEVEL
+Option 2: Load All Keys as Environment Variables
+yamlapiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+  - name: app
+    image: myapp:1.0
+    envFrom:
+    - configMapRef:
+        name: app-config  # All keys become env vars
+Option 3: Mount as Files (Volume)
+yamlapiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/nginx/conf.d  # Mount location
+  volumes:
+  - name: config-volume
+    configMap:
+      name: app-config
+      items:
+      - key: nginx.conf        # Key from ConfigMap
+        path: default.conf     # Filename in the pod
+```
+
+Inside the pod, you'll have:
+```
+/etc/nginx/conf.d/default.conf  (contains the nginx.conf content)
+Real-World Example: Application Configuration
+ConfigMap
+yamlapiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+data:
+  # Simple key-value pairs
+  API_URL: "https://api.example.com"
+  FEATURE_FLAG_NEW_UI: "true"
+  CACHE_TTL: "3600"
+  
+  # Complete configuration file
+  config.json: |
+    {
+      "database": {
+        "host": "db.example.com",
+        "port": 5432,
+        "name": "myapp"
+      },
+      "redis": {
+        "host": "redis.example.com",
+        "port": 6379
+      }
+    }
+Pod Using the ConfigMap
+yamlapiVersion: v1
+kind: Pod
+metadata:
+  name: webapp
+spec:
+  containers:
+  - name: app
+    image: mywebapp:1.0
+    # Environment variables
+    env:
+    - name: API_URL
+      valueFrom:
+        configMapKeyRef:
+          name: web-config
+          key: API_URL
+    - name: FEATURE_FLAG_NEW_UI
+      valueFrom:
+        configMapKeyRef:
+          name: web-config
+          key: FEATURE_FLAG_NEW_UI
+    # Mount config file
+    volumeMounts:
+    - name: config
+      mountPath: /app/config
+  volumes:
+  - name: config
+    configMap:
+      name: web-config
+      items:
+      - key: config.json
+        path: config.json
+Managing ConfigMaps
+View ConfigMaps
+bash# List all ConfigMaps
+kubectl get configmap
+
+# View ConfigMap contents
+kubectl describe configmap app-config
+
+# Get as YAML
+kubectl get configmap app-config -o yaml
+Update ConfigMap
+bash# Edit directly
+kubectl edit configmap app-config
+
+# Or replace from file
+kubectl apply -f configmap.yaml
+Important: Pods don't automatically reload when ConfigMap changes. You need to:
+
+Restart the pod, OR
+Use a sidecar to watch for changes, OR
+Use tools like Reloader
+
+Delete ConfigMap
+bashkubectl delete configmap app-config
+ConfigMap vs Secret
+ConfigMapSecretNon-sensitive dataSensitive data (passwords, tokens)Stored as plain textBase64 encoded (not encrypted by default)Visible in kubectl getHidden in kubectl getExamples: API URLs, feature flagsExamples: DB passwords, API keys
+Common Use Cases
+
+Application Settings
+
+yaml   data:
+     LOG_LEVEL: "info"
+     TIMEOUT: "30"
+
+Feature Flags
+
+yaml   data:
+     ENABLE_BETA_FEATURE: "true"
+     MAX_UPLOAD_SIZE: "10MB"
+
+Configuration Files
+
+yaml   data:
+     redis.conf: |
+       maxmemory 256mb
+       maxmemory-policy allkeys-lru
+
+Environment-Specific Config
+
+yaml   # configmap-dev.yaml
+   data:
+     ENV: "development"
+     API_URL: "http://localhost:8080"
+   
+   # configmap-prod.yaml
+   data:
+     ENV: "production"
+     API_URL: "https://api.example.com"
+Best Practices
+✅ Use ConfigMaps for non-sensitive data
+✅ Keep ConfigMaps small (< 1MB)
+✅ One ConfigMap per application or concern
+✅ Version your ConfigMaps (e.g., app-config-v1, app-config-v2)
+✅ Use Secrets for passwords, not ConfigMaps
+##### Step-01: Introduction
+- We are going to create a MySQL Database with persistence storage using AWS EBS Volumes
+
+| Kubernetes Object  | YAML File |
+| ------------- | ------------- |
+| Storage Class  | 01-storage-class.yml |
+| Persistent Volume Claim | 02-persistent-volume-claim.yml   |
+| Config Map  | 03-UserManagement-ConfigMap.yml  |
+| Deployment, Environment Variables, Volumes, VolumeMounts  | 04-mysql-deployment.yml  |
+| ClusterIP Service  | 05-mysql-clusterip-service.yml  |
+
+##### Step-02: Create following Kubernetes manifests
+###### Create Storage Class manifest
+- https://kubernetes.io/docs/concepts/storage/storage-classes/#volume-binding-mode
+- **Important Note:** `WaitForFirstConsumer` mode will delay the volume binding and provisioning  of a PersistentVolume until a Pod using the PersistentVolumeClaim is created. 
+
+###### Create Persistent Volume Claims manifest
+```
+# Create Storage Class & PVC
+kubectl apply -f kube-manifests/
+
+# List Storage Classes
+kubectl get sc
+
+# List PVC
+kubectl get pvc 
+
+# List PV
+kubectl get pv
+```
+###### Create ConfigMap manifest
+- We are going to create a `usermgmt` database schema during the mysql pod creation time which we will leverage when we deploy User Management Microservice. 
+
+###### Create MySQL Deployment manifest
+- Environment Variables
+- Volumes
+- Volume Mounts
+
+###### Create MySQL ClusterIP Service manifest
+- At any point of time we are going to have only one mysql pod in this design so `ClusterIP: None` will use the `Pod IP Address` instead of creating or allocating a separate IP for `MySQL Cluster IP service`.   
+
+##### Step-03: Create MySQL Database with all above manifests
+```
+# Create MySQL Database
+kubectl apply -f kube-manifests/
+
+# List Storage Classes
+kubectl get sc
+
+# List PVC
+kubectl get pvc 
+
+# List PV
+kubectl get pv
+
+# List pods
+kubectl get pods 
+
+# List pods based on  label name
+kubectl get pods -l app=mysql
+```
+
+##### Step-04: Connect to MySQL Database
+```
+# Connect to MYSQL Database
+kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+
+[or]
+
+# Use mysql client latest tag
+kubectl run -it --rm --image=mysql:latest --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+
+# Verify usermgmt schema got created which we provided in ConfigMap
+mysql> show schemas;
+```
+
+##### Step-05: References
+- We need to discuss references exclusively here. 
+- These will help you in writing effective templates based on need in your environments. 
+- Few features are still in alpha stage as on today (Example:Resizing), but once they reach beta you can start leveraging those templates and make your trials. 
+- **EBS CSI Driver:** https://github.com/kubernetes-sigs/aws-ebs-csi-driver
+- **EBS CSI Driver Dynamic Provisioning:**  https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/dynamic-provisioning
+- **EBS CSI Driver - Other Examples like Resizing, Snapshot etc:** https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes
+- **k8s API Reference Doc:** https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#storageclass-v1-storage-k8s-io
+
+- To list the storage classes in your cluster, run:
+```kubectl get storageclass```
+- To view detailed information about a specific storage class, run:
+```kubectl describe storageclass <storage-class-name>```
+- To list the persistent volume claims (PVCs) in your cluster, run:
+```kubectl get pvc```
+- To view detailed information about a specific PVC, run:
+```kubectl describe pvc <pvc-name>```
+- To list the configmaps in your cluster, run:
+```kubectl get configmap```
+- To view detailed information about a specific configmap, run:
+```kubectl describe configmap <configmap-name>```
+- /docker-entrypoint-initdb.d is a special directory in the MySQL Docker image.
+- Any .sql or .sh files placed in this directory will be automatically executed when the MySQL container is started for the first time.
+- This is useful for initializing the database with custom schemas, tables, or data.
+- Once the persistent volume is created is attached to the MySQL pod, the data stored in the database will persist even if the pod is deleted or recreated.
+- The volume is attached to the node where the pod is scheduled, and the data remains intact as long as the volume exists.
+- To list pods with a specific label run:
+```kubectl get pods -l <label-key>=<label-value>```
+- Example:
+```kubectl get pods -l app=mysql```
+- To access the MySQL database from within the cluster, you can use the MySQL client image to create a temporary pod that connects to the MySQL service.
+- The command `kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11` creates a temporary pod named `mysql-client` using the MySQL 5.6 image.
+- The `--restart=Never` flag ensures that the pod is not restarted after it exits.
+- The `--rm` flag ensures that the pod is deleted after you exit the MySQL client.
+- The command `mysql -h mysql -pdbpassword11` connects to the MySQL service using the hostname `mysql` and the password `dbpassword11`.
