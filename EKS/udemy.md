@@ -1087,7 +1087,7 @@ yaml   # configmap-dev.yaml
      ENV: "development"
      API_URL: "http://localhost:8080"
    
-   # configmap-prod.yaml
+configmap-prod.yaml
    data:
      ENV: "production"
      API_URL: "https://api.example.com"
@@ -1208,3 +1208,216 @@ mysql> show schemas;
 - The `--restart=Never` flag ensures that the pod is not restarted after it exits.
 - The `--rm` flag ensures that the pod is deleted after you exit the MySQL client.
 - The command `mysql -h mysql -pdbpassword11` connects to the MySQL service using the hostname `mysql` and the password `dbpassword11`.
+
+#### Creating kubernetes Manifest for user management microservice deployment:
+- All files for this hands on are located are EKS\yaml-files\class-yaml-files\04-03-UserManagement-MicroService-with-MySQLDB
+What is Postman?
+Postman is a tool that lets you send requests to APIs and see the responses - like a sophisticated web browser, but for developers testing backends instead of visiting websites.
+How It Works - Simple Analogy
+Think of Postman like a mail carrier (hence the name!):
+
+You write a letter (HTTP request)
+Address it to someone (API endpoint URL)
+Send it off (click Send)
+Get a response back (API response)
+
+Basic Workflow
+1. You create a request:
+Method: GET, POST, PUT, DELETE, etc.
+URL: http://api.example.com/users
+Headers: Authentication tokens, content-type, etc.
+Body: Data you're sending (for POST/PUT)
+2. Click "Send"
+3. Get a response:
+Status: 200 OK, 404 Not Found, 500 Error, etc.
+Body: JSON data, HTML, XML, etc.
+Time: How long it took
+Real Example - Testing a MySQL API on EKS
+Let's say you deployed an API application in EKS that connects to your MySQL database:
+┌──────────┐      HTTP Request       ┌─────────────┐
+│ Postman  │ ───────────────────────>│   EKS Pod   │
+│ (Laptop) │                         │  (Your API) │
+└──────────┘      HTTP Response      └─────────────┘
+                <───────────────────        │
+                                             │ Queries
+                                             ▼
+                                      ┌─────────────┐
+                                      │ MySQL Pod   │
+                                      │ (Database)  │
+                                      └─────────────┘
+Example Request in Postman:
+Method: POST
+URL: http://your-eks-loadbalancer.com/api/users
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer your-token-here
+Body:
+{
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+What happens:
+
+Postman sends this HTTP request to your EKS load balancer
+Request routes to your API pod
+Your API pod processes it and inserts data into MySQL
+API pod sends response back
+Postman displays the response
+
+Response you might see:
+jsonStatus: 201 Created
+Body:
+{
+  "id": 123,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "created_at": "2025-12-30T10:30:00Z"
+}
+```
+
+## Key Features
+
+**Collections:** Group related requests together
+```
+My API Tests/
+├── User Management/
+│   ├── Create User (POST)
+│   ├── Get User (GET)
+│   ├── Update User (PUT)
+│   └── Delete User (DELETE)
+└── Authentication/
+    ├── Login (POST)
+    └── Logout (POST)
+```
+
+**Environment Variables:** Store values like URLs, tokens
+```
+Development: http://dev-api.com
+Staging: http://staging-api.com
+Production: http://api.com
+Tests: Automated checks
+javascript// Check if status is 200
+pm.test("Status is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+// Check if response contains expected data
+pm.test("User created", function () {
+    pm.expect(pm.response.json().name).to.eql("John Doe");
+});
+Why Use Postman with EKS?
+When you deploy applications to EKS, you need to test:
+
+✅ Are my API endpoints accessible?
+✅ Is authentication working?
+✅ Is data being saved to MySQL correctly?
+✅ Are my services communicating properly?
+
+Postman makes this testing quick and visual instead of writing curl commands in terminal.
+Alternative: cURL
+Postman is essentially a GUI for what you could do with cURL:
+Postman way: Click buttons, fill forms
+cURL way:
+bashcurl -X POST http://your-api.com/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John Doe","email":"john@example.com"}'
+Both do the same thing - Postman is just more user-friendly!
+Does this help clarify how Postman works?
+What Browsers Can Do vs. What Postman Can Do
+Browsers - Limited to GET Requests
+When you type a URL in your browser and press Enter, you're only sending a GET request.
+Browser: http://api.example.com/users
+↓
+Sends: GET request
+↓
+Shows: The response page
+APIs Need More Than GET
+Most APIs require different HTTP methods that browsers can't easily do:
+GET - Retrieve data ✅ Browser can do this
+POST - Create new data ❌ Browser can't easily do this
+PUT - Update existing data ❌ Browser can't do this
+DELETE - Remove data ❌ Browser can't do this
+Real-World Example
+Let's say you have a user management API on EKS:
+Using Browser (Limited)
+✅ http://api.example.com/users
+   → Shows list of users (GET works!)
+
+❌ Can't create a new user (needs POST)
+❌ Can't update a user (needs PUT)  
+❌ Can't delete a user (needs DELETE)
+❌ Can't send authentication tokens easily
+❌ Can't send JSON data in request body
+Using Postman (Full Control)
+✅ GET http://api.example.com/users
+   → Retrieve users
+
+✅ POST http://api.example.com/users
+   Body: {"name": "John", "email": "john@example.com"}
+   → Create new user
+
+✅ PUT http://api.example.com/users/123
+   Body: {"name": "John Updated"}
+   → Update user
+
+✅ DELETE http://api.example.com/users/123
+   → Delete user
+Specific Limitations of Browsers
+1. Can't Send Custom Headers Easily
+API requires: Authorization: Bearer abc123token
+Browser: No easy way to add this
+Postman: Add in Headers section
+2. Can't Send JSON Body
+API expects: {"username": "admin", "password": "secret"}
+Browser: Can't send this in a GET request
+Postman: Add in Body section
+3. Can't Test Different Methods
+Browser form: Only GET or POST (and POST requires HTML form)
+Postman: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, etc.
+When Browser IS Enough
+Browsers work fine for:
+
+✅ Simple public APIs returning JSON (GET only)
+✅ Checking if an endpoint is reachable
+✅ Viewing rendered web pages
+
+Example that works in browser:
+http://api.example.com/users
+→ Returns: [{"id":1,"name":"John"},{"id":2,"name":"Jane"}]
+When You NEED Postman
+You need Postman when:
+
+❌ Testing login endpoints (POST with credentials)
+❌ Creating/updating/deleting data
+❌ Sending authentication tokens
+❌ Testing protected endpoints
+❌ Sending complex JSON payloads
+❌ Need to see detailed response headers, status codes, timing
+
+Practical EKS Example
+Your MySQL API on EKS has a login endpoint:
+Browser approach (doesn't work):
+http://your-eks-lb.com/api/login
+→ Error: Method not allowed (needs POST, not GET)
+Postman approach (works):
+POST http://your-eks-lb.com/api/login
+Headers:
+  Content-Type: application/json
+Body:
+{
+  "username": "admin",
+  "password": "secret123"
+}
+Response:
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {"id": 1, "name": "Admin"}
+}
+Summary
+Browser = Read-only viewer (mostly GET requests)
+Postman = Full API testing tool (all HTTP methods, headers, auth, etc.)
+Think of it this way:
+
+Browser is like a TV remote that only has an "ON" button
+Postman is like a full control panel with every button you need
+
