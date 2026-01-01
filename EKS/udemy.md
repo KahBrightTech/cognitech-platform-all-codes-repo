@@ -1422,7 +1422,7 @@ Browser is like a TV remote that only has an "ON" button
 Postman is like a full control panel with every button you need
 
 #### k8s Secrets, Init Containers, Liveness and Readiness Probes and Request Limits:
-##### Secrets:
+##### Secrets: section 05-01-Kubernetes-Secrets
 - Kubernetes Secrets are used to store sensitive information, such as passwords, OAuth tokens, and ssh keys.
 - Storing such information in a Secret is safer and more flexible than putting it verbatim in a Pod definition or in a container image.
 - Kubernetes Secrets let you store and manage sensitive information separately from your application code.
@@ -1437,3 +1437,11 @@ Postman is like a full control panel with every button you need
 ```powershell[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("dbpassword11"))```
 - This will create an encoded version of the password that you can use in your secret manifest.
 - You can also use the url https://www.base64encode.org/ to encode and decode base64 strings.
+
+##### Init Containers: section 05-02-Kubernetes-Init-Containers
+- Init containers are specialized containers that run before app containers in a pod.
+- They can contain setup scripts and utilities not present in an app image.
+- Init containers always run to completion.
+- Each init container must complete successfully before the next one starts.
+- If any init container fails, Kubernetes restarts the pod until all init containers succeed.
+- Init containers are useful for performing initialization tasks, such as setting up configuration files, waiting for services to be available, or performing database migrations.

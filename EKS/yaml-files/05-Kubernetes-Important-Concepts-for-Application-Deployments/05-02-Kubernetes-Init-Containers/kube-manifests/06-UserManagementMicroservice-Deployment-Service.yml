@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: usermgmt-microservice
   labels:
@@ -9,31 +9,32 @@ spec:
   selector:
     matchLabels:
       app: usermgmt-restapp
-  template:  
+  template:
     metadata:
-      labels: 
+      labels:
         app: usermgmt-restapp
     spec:
       initContainers:
-        - name: init-db
-          image: busybox:1.31
-          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z mysql 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";']      
+      - name: init-db
+        image: busybox:1.31
+        command: [ 'sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z mysql 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";' ]
+        # This init container will wait until MySQL DB Server is up and running 
       containers:
-        - name: usermgmt-restapp
-          image: stacksimplify/kube-usermanagement-microservice:1.0.0
-          ports: 
-            - containerPort: 8095           
-          env:
-            - name: DB_HOSTNAME
-              value: "mysql"            
-            - name: DB_PORT
-              value: "3306"            
-            - name: DB_NAME
-              value: "usermgmt"            
-            - name: DB_USERNAME
-              value: "root"            
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-db-password
-                  key: db-password             
+      - name: usermgmt-restapp
+        image: stacksimplify/kube-usermanagement-microservice:1.0.0
+        ports:
+        - containerPort: 8095
+        env:
+        - name: DB_HOSTNAME
+          value: "mysql"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: "usermgmt"
+        - name: DB_USERNAME
+          value: "root"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-db-password
+              key: db-password
