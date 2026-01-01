@@ -5,7 +5,7 @@ metadata:
   labels:
     app: hway
 spec:
-  serviceAccountName: s3-access # Uncommented - this is required for Pod Identity!
+  serviceAccountName: secrets-pia # Uncommented - this is required for Pod Identity!
   containers:
   - name: hway
     image: amazon/aws-cli:latest # Changed to AWS CLI image for testing
