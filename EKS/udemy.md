@@ -1445,3 +1445,19 @@ Postman is like a full control panel with every button you need
 - Each init container must complete successfully before the next one starts.
 - If any init container fails, Kubernetes restarts the pod until all init containers succeed.
 - Init containers are useful for performing initialization tasks, such as setting up configuration files, waiting for services to be available, or performing database migrations.
+- With init containers you can notice that there is no restart for the microservice containers as the init containers waits for the completion of the mysql pod creation and then only the microservice containers are started.
+
+##### Liveness and Readiness Probes: section 05-03-Kubernetes-Liveness-and-Readiness-Probes
+- We have 3 types of probes available in kubernetes:
+  1. Liveness Probes
+  2. Readiness Probes
+  3. Startup Probes
+- kubelet uses liveness probes to know when to restart a container.
+- A liveness probe checks if the application inside the container is still running. If the liveness probe fails, kubelet kills the container, and the container is subjected to its restart policy.
+- A readiness probe checks if the application inside the container is ready to handle requests. If the readiness probe fails, the endpoints controller removes the Pod's IP address from the endpoints of all Services that match the Pod. The kubelet does not kill the container if the readiness probe fails.
+- Startup probes are used to check if an application within a container has started. If a startup probe is provided, it disables liveness and readiness checks until it succeeds, making it useful for applications that take a long time to start. This can be used to adopt liveness checks on slow starting containers avoiding them from getting killed by kublet befoire they are up and running. liveness and readiness probes will start working only after the startup probe succeeds.
+- Both probes can be configured using HTTP requests, TCP socket checks, or command execution
+- Options to define probes:
+  - Check using commands: /bin/sh -c nc -z localhost 8080
+  - Check using HTTP GET requests: http://localhost:8080/health
+  - Check using TCP socket: localhost:8080
