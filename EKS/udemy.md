@@ -1421,3 +1421,19 @@ Think of it this way:
 Browser is like a TV remote that only has an "ON" button
 Postman is like a full control panel with every button you need
 
+#### k8s Secrets, Init Containers, Liveness and Readiness Probes and Request Limits:
+##### Secrets:
+- Kubernetes Secrets are used to store sensitive information, such as passwords, OAuth tokens, and ssh keys.
+- Storing such information in a Secret is safer and more flexible than putting it verbatim in a Pod definition or in a container image.
+- Kubernetes Secrets let you store and manage sensitive information separately from your application code.
+- This way, you can keep your sensitive data secure and easily update it without changing your application.
+- Secrets are encoded in base64 format to provide a basic level of obfuscation, but they are not encrypted by default.
+- To create a secret from literal values, you can use the following command:
+```bashkubectl create secret generic my-secret \
+  --from-literal=username=myuser \
+  --from-literal=password=mypassword
+```
+- To encode a passsword to base64 in powershell use the following command 
+```powershell[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("dbpassword11"))```
+- This will create an encoded version of the password that you can use in your secret manifest.
+- You can also use the url https://www.base64encode.org/ to encode and decode base64 strings.
