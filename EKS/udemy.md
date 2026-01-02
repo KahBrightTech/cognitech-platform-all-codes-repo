@@ -1533,3 +1533,115 @@ The 60-second delay is giving your app time to initialize before Kubernetes star
 - In the above example, the container is requesting 256Mi of memory and 500m CPU, and it is limited to 512Mi of memory and 1 CPU.
 - This means that the container is guaranteed to have at least 256Mi of memory and 500m CPU, but it cannot use more than 512Mi of memory and 1 CPU.
 - Setting resource requests and limits helps ensure that your applications have the resources they need to run efficiently while preventing any single container from consuming too many resources and affecting other containers running on the same node.
+
+#### Kubernetest Namespaces: section 05-05-Kubernetes-Namespaces
+- They are also called virtual clusters within a physical cluster.
+- Kubernetes namespaces are a way to divide cluster resources between multiple users (via resource quota).
+- Namespaces provide a scope for names. Names of resources need to be unique within a namespace but not across namespaces.
+- Namespaces are intended for use in environments with many users spread across multiple teams, or projects
+- You can create a namespace using the following command:
+```bashkubectl create namespace my-namespace```
+- You can list all namespaces using the following command:
+```bashkubectl get namespaces```
+- Get in the habit of using namespaces to organize your Kubernetes resources effectively!
+**Benefit of Using Namespaces:**
+1. Resource Isolation: Namespaces provide a way to isolate resources within a cluster. This is useful for multi-tenant environments where different teams or projects need to share the same cluster but require separate resources.
+2. Resource Quotas: You can set resource quotas on namespaces to limit the amount of CPU, memory, and other resources that can be used within that namespace. This helps prevent any single team or project from consuming too many resources and affecting others.
+3. Easier Management: Namespaces make it easier to manage and organize resources. You can group related resources together within a namespace, making it easier to find and manage them.
+4. Access Control: You can use Role-Based Access Control (RBAC) to control access to resources within a namespace. This allows you to restrict access to certain resources based on user roles and permissions.
+5. Environment Separation: Namespaces can be used to separate different environments, such as development, staging, and production. This helps prevent accidental changes to production resources during development or testing.
+- To create resources within a specific namespace, you can use the `-n` or `--namespace` flag with kubectl commands. For example:
+```bashkubectl create deployment my-deployment --image=my-image -n my-namespace```
+- Any resources created without specifying a namespace will be created in the default namespace.
+- You can also specify the namespace in the resource manifest files using the `metadata.namespace` field. For example:
+- kube public is created by default and is readable by all users (including unauthenticated users). It is used for resources that should be accessible to everyone, such as public configuration data.
+- kube system is created by default and is used for resources that are managed by Kubernetes itself, such as the kube-dns service and other system components.
+- default is the default namespace for resources that are created without specifying a namespace. If you do not specify a namespace when creating a resource, it will be created in the default namespace.
+- kube-node-lease is created by default and is used for node lease objects, which are used to track the health of nodes in the cluster.
+- To get all resources within a particular namespace, you can use the following command:
+```bashkubectl get all -n my-namespace```
+- This will list all resources (pods, services, deployments, etc.) within the specified namespace.
+- To delete a namespace and all its resources, you can use the following command:
+```bashkubectl delete namespace my-namespace```
+- pvc and pv are not namespaced resources, they exist at the cluster level. 
+- storage classes are also not namespaced resources, they exist at the cluster level.
+
+##### LimitRange:
+- With LimitRange, you can set default resource requests and limits for containers in a namespace.
+- This helps ensure that all containers in the namespace have appropriate resource constraints, even if the users forget to specify them.
+- You can create a LimitRange using the following manifest:
+```yamllkind: LimitRange
+metadata:
+  name: resource-limits
+  namespace: my-namespace
+spec:
+  limits:
+  - default:  # Set default limits
+      cpu: "500m"
+      memory: "256Mi"
+    defaultRequest: # Set default requests
+      cpu: "250m"
+      memory: "128Mi"
+    type: Container
+```
+- In this example, any container created in the `my-namespace` namespace without specified resource requests or limits will default to 250m CPU and 128Mi memory requests, and 500m CPU and 256Mi memory limits.
+- The defaultRequest field sets the default resource requests, while the default field sets the default resource limits.
+- You can apply the LimitRange manifest using the following command:
+```bashkubectl apply -f limitrange.yaml```
+- To view the LimitRanges in a namespace, you can use the following command:
+```bashkubectl get limitrange -n my-namespace```
+- The file namespace-LimitRange-default.yaml contains the default LimitRange configuration for the namespace. It is numbered as 00 to ensure it is applied before other manifests that may create resources in the namespace. 
+- All other resource creation willl fail if the namespace is not created first as other resources depend on the namespace being present.
+
+##### Resource Quotas:
+- Resource Quotas are used to limit the total amount of resources that can be consumed by all pods and containers within a namespace.
+- This helps prevent any single team or project from consuming too many resources and affecting others in a multi-tenant environment.
+- You can create a ResourceQuota using the following manifest:
+```yamllkind: ResourceQuota
+metadata:
+  name: resource-quota
+  namespace: my-namespace
+spec:
+  hard:
+    pods: "10"  # Limit to 10 pods
+    requests.cpu: "4"  # Limit total CPU requests to 4 cores
+    requests.memory: "8Gi"  # Limit total memory requests to 8Gi
+    limits.cpu: "8"  # Limit total CPU limits to 8 cores
+    limits.memory: "16Gi"  # Limit total memory limits to 16Gi
+```
+- In this example, the ResourceQuota limits the total number of pods to 10, total CPU requests to 4 cores, total memory requests to 8Gi, total CPU limits to 8 cores, and total memory limits to 16Gi within the `my-namespace` namespace.
+- You can apply the ResourceQuota manifest using the following command:
+How ResourceQuota works:
+yamlapiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: namespace-quota
+  namespace: my-namespace
+spec:
+  hard:
+    requests.cpu: "4"        # Total CPU requests across all pods
+    requests.memory: "8Gi"   # Total memory requests across all pods
+    limits.cpu: "8"          # Total CPU limits across all pods
+    limits.memory: "16Gi"    # Total memory limits across all pods
+    pods: "10"               # Max number of pods
+What gets counted:
+✅ requests.cpu - Sum of all pod CPU requests in the namespace
+✅ requests.memory - Sum of all pod memory requests in the namespace
+✅ limits.cpu - Sum of all pod CPU limits in the namespace
+✅ limits.memory - Sum of all pod memory limits in the namespace
+Your example pod:
+yamlresources:
+  requests:
+    cpu: "500m"      # This counts toward requests.cpu quota
+    memory: "128Mi"  # This counts toward requests.memory quota
+  limits:
+    cpu: "1000m"     # This counts toward limits.cpu quota
+    memory: "500Mi"  # This counts toward limits.memory quota
+If you have a quota with hard.requests.cpu: "4":
+You could deploy up to 8 of these pods (8 × 500m = 4000m = 4 CPUs)
+The 9th pod would be rejected because it would exceed the quota
+Important notes:
+ResourceQuotas are namespace-scoped, not cluster-wide
+EKS doesn't create ResourceQuotas by default - you have to create them
+Quotas are enforced at pod creation time
+If a pod doesn't specify requests/limits and a quota exists, you must also have a LimitRange to provide defaults
