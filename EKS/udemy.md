@@ -1461,3 +1461,75 @@ Postman is like a full control panel with every button you need
   - Check using commands: /bin/sh -c nc -z localhost 8080
   - Check using HTTP GET requests: http://localhost:8080/health
   - Check using TCP socket: localhost:8080
+          livenessProbe:
+            exec:
+              command: 
+                - /bin/sh
+                - -c 
+                - nc -z localhost 8095
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /usermgmt/health-status
+              port: 8095
+            initialDelaySeconds: 60
+            periodSeconds: 10   
+- The above example shows liveness probe using command execution and readiness probe using http get request.
+- Both probes have an initial delay of 60 seconds and will check every 10 seconds thereafter.
+- The liveness probe checks if the application is running on port 8095 using netcat (nc) command.
+- The readiness probe checks the health status endpoint of the application to see if it is ready to handle requests.
+- You can adjust the initial delay and period seconds based on your application's startup time and health check frequency requirements.
+- the /binm/sh -c nc -z localhost 8095 command checks if the application is listening on port 8095 using netcat (nc). The -z option tells nc to scan for listening daemons without sending any data. If the application is running and listening on that port, the command will succeed, indicating that the container is alive.
+- The readiness probe uses an HTTP GET request to the /usermgmt/health-status endpoint on port 8095 to determine if the application is ready to handle requests. If the application responds with a successful status code (e.g., 200 OK), the container is considered ready.
+- For the above readiness probe the application will not start until the readiness probe succeeds. So ensure that the application has implemented the /usermgmt/health-status endpoint to return a successful response when it is ready to handle requests.
+Here's the sequence:
+Container starts - Your application begins running right away
+Initial delay - Kubernetes waits 60 seconds (your initialDelaySeconds)
+First probe - After 60 seconds, Kubernetes performs the first readiness check
+Traffic routing - Only when the probe succeeds does the pod get marked "Ready" and start receiving traffic
+Key distinctions:
+yamlreadinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 60  # Wait 60s before first check
+  periodSeconds: 10         # Check every 10s after that
+What happens during those 60 seconds:
+
+✅ Container is running
+✅ Application is starting up
+❌ Pod is NOT marked as "Ready"
+❌ Pod does NOT receive Service traffic
+❌ No probes are executed yet
+Startup vs Readiness:
+startupProbe - Checks if app has started (protects slow-starting apps)
+readinessProbe - Checks if app is ready to receive traffic
+livenessProbe - Checks if app is still healthy (restarts if failing)
+The 60-second delay is giving your app time to initialize before Kubernetes starts checking if it's ready. Your app is running during that entire time.
+#### Request Limits: section 05-04-Kubernetes-Resource-Requests-and-Limits
+- In Kubernetes, resource requests and limits are used to manage the CPU and memory resources allocated to containers within a pod.
+- Resource Requests:
+  - A resource request is the amount of CPU or memory that a container is guaranteed to have.
+  - When a pod is scheduled to a node, the Kubernetes scheduler uses the resource requests to determine if the node has enough available resources to run the pod.
+  - If a node does not have enough resources to satisfy the requests of a pod, the pod will not be scheduled on that node.
+- Resource Limits:
+  - A resource limit is the maximum amount of CPU or memory that a container is allowed to use.
+  - If a container tries to use more resources than its limit, the kubelet will throttle the container's resource usage.
+  - For CPU, the container will be throttled, meaning it will be limited in how much CPU time it can use.
+  - For memory, if a container exceeds its memory limit, it may be terminated by the kubelet.
+- Example of Resource Requests and Limits in a Pod Manifest:
+```yamlcontainers:
+  - name: my-app
+    image: my-app-image
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "500m"
+      limits:
+        memory: "512Mi"
+        cpu: "1"  
+- basically request is how much minimum resources your container needs to run properly and limit is the maximum resources your container can use.
+- In the above example, the container is requesting 256Mi of memory and 500m CPU, and it is limited to 512Mi of memory and 1 CPU.
+- This means that the container is guaranteed to have at least 256Mi of memory and 500m CPU, but it cannot use more than 512Mi of memory and 1 CPU.
+- Setting resource requests and limits helps ensure that your applications have the resources they need to run efficiently while preventing any single container from consuming too many resources and affecting other containers running on the same node.
