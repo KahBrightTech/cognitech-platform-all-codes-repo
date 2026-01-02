@@ -1648,3 +1648,47 @@ If a pod doesn't specify requests/limits and a quota exists, you must also have 
 - You can view the resources in the resource quota by running the following command:
 ```bashkubectl describe quota resource-quota -n my-namespace```
 - This will show you the current usage and limits for each resource defined in the ResourceQuota.
+
+#### EKS Storage: RDS DB Introduction:
+- Amazon RDS (Relational Database Service) is a managed database service provided by AWS that makes it easier to set up, operate, and scale a relational database in the cloud.
+- With RDS, you can choose from several database engines, including MySQL, PostgreSQL, Oracle, SQL Server, and Amazon Aurora.
+- RDS handles routine database tasks such as provisioning, patching, backup, recovery, and scaling, allowing you to focus on your application rather than database management.
+- Key features of Amazon RDS include:
+  - Automated Backups: RDS automatically backs up your database and retains backups for a specified period, allowing you to restore your database to any point within that retention period.
+  - Multi-AZ Deployments: RDS supports Multi-AZ (Availability Zone) deployments for high availability and failover support. In the event of a failure, RDS automatically switches to a standby replica in another AZ.
+  - Read Replicas: RDS allows you to create read replicas of your database to offload read traffic and improve performance for read-heavy applications.
+  - Scalability: You can easily scale your RDS instance vertically by changing the instance type or horizontally by adding read replicas.
+  - Security: RDS provides several security features, including encryption at rest and in transit, network isolation using VPCs, and integration with AWS Identity and Access Management (IAM) for access control.
+  - Monitoring and Metrics: RDS integrates with Amazon CloudWatch to provide monitoring and metrics for your database instances, allowing you to track performance and set alarms for specific thresholds.
+  - Using ebs storage for mysql in eks is complex and not recommended for production workloads. Instead, using Amazon RDS for your database needs is a more reliable and scalable solution.
+- With RDS, you can easily create a MySQL database instance and connect it to your EKS cluster for your applications to use.
+- To create a MySQL RDS instance, you can use the AWS Management Console, AWS CLI, or AWS SDKs.
+- Here are the basic steps to create a MySQL RDS instance using the AWS Management Console
+1. Sign in to the AWS Management Console and open the Amazon RDS console.
+2. Click on "Create database" to start the database creation wizard.  
+3. Select "MySQL" as the database engine and choose the version you want to use.
+4. Choose the "Production" template for a production-ready configuration or "Dev/Test" for a development environment.
+5. Configure the database settings, including instance size, storage type, and allocated storage.
+6. Set the master username and password for the database.
+7. Configure advanced settings, such as VPC, subnet group, security groups, and backup
+    preferences.
+8. Review your settings and click "Create database" to launch the RDS instance.
+- Once the RDS instance is created, you can connect to it from your EKS cluster 
+using the endpoint provided in the RDS console.
+- Make sure to configure the security group associated with the RDS instance to allow inbound traffic from your EKS cluster's VPC or specific nodes.
+- You can use the following command to connect to the MySQL RDS instance from a pod
+```bash
+kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h <rds-endpoint> -P 3306 -u <master-username> -p
+```
+- We use externale name service to connect to RDS from EKS cluster.
+- Create a service of type ExternalName that points to the RDS endpoint.
+```yamlapiVersion: v1
+kind: Service
+metadata: 
+  name: mysql-rds
+  namespace: my-namespace
+spec:
+  type: ExternalName
+  externalName: <rds-endpoint>
+```
+- You can then use the service name `mysql-rds` to connect to the RDS instance from your pods within the EKS cluster.
