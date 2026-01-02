@@ -1645,3 +1645,6 @@ ResourceQuotas are namespace-scoped, not cluster-wide
 EKS doesn't create ResourceQuotas by default - you have to create them
 Quotas are enforced at pod creation time
 If a pod doesn't specify requests/limits and a quota exists, you must also have a LimitRange to provide defaults
+- You can view the resources in the resource quota by running the following command:
+```bashkubectl describe quota resource-quota -n my-namespace```
+- This will show you the current usage and limits for each resource defined in the ResourceQuota.
