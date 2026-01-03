@@ -1680,7 +1680,7 @@ using the endpoint provided in the RDS console.
 ```bash
 kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h <rds-endpoint> -P 3306 -u <master-username> -p
 ```
-- We use externale name service to connect to RDS from EKS cluster.
+- We use **ExternalName** service to connect to RDS from EKS cluster.
 - Create a service of type ExternalName that points to the RDS endpoint.
 ```yamlapiVersion: v1
 kind: Service
@@ -1692,3 +1692,20 @@ spec:
   externalName: <rds-endpoint>
 ```
 - You can then use the service name `mysql-rds` to connect to the RDS instance from your pods within the EKS cluster.
+- **IMPORTANT**: For the RDS exercise, ensure that you create the database schema `usermgmt` in the RDS instance before deploying the user management microservice.
+- This schema will be created automatically if you are using MySQL deployment in EKS as part of the earlier exercise.
+- However, since we are using RDS here, we need to create the schema manually in the RDS instance.
+- You can create the schema using the following kubectl command:
+```bash
+kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql -h int-preproduction-use1-shared-eks-mysql-db.c0nwwcyeemwq.us-east-1.rds.amazonaws.com -u admin_suitable_coral -p"O<fKWjU:U5=hpHA" --ssl-mode=DISABLED
+```
+- Quoting the password is important here as it contains special characters. This ensures that the shell interprets the password correctly.
+- once logged in run the following commands to create the schema:
+```show schemas;
+```
+- This shows the existing schemas in the database.
+```create database usermgmt;
+```
+- This creates the `usermgmt` schema in the RDS instance.
+- Exit the mysql client by typing `exit` and pressing Enter.
+- Now you can proceed to deploy the user management microservice in EKS, which will connect to the RDS instance using the `usermgmt` schema.
