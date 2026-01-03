@@ -1709,3 +1709,14 @@ kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql 
 - This creates the `usermgmt` schema in the RDS instance.
 - Exit the mysql client by typing `exit` and pressing Enter.
 - Now you can proceed to deploy the user management microservice in EKS, which will connect to the RDS instance using the `usermgmt` schema.
+
+#### AWS Elastic Load Balancer Overciew:
+- AWS has 3 types of load balancers:
+  1. Application Load Balancer (ALB)
+  2. Network Load Balancer (NLB)
+  3. Classic Load Balancer (CLB)
+- see more information here: https://aws.amazon.com/elasticloadbalancing/
+- Classic Load Balancer (CLB) is the legacy load balancer that operates at both the request level and connection level. It is suitable for simple load balancing of traffic across multiple EC2 instances.
+- Application Load Balancer (ALB) operates at the application layer (Layer 7) and is designed to handle HTTP and HTTPS traffic. It provides advanced routing features, such as path-based routing, host-based routing, and support for WebSockets.
+- Network Load Balancer (NLB) operates at the transport layer (Layer 4) and is designed to handle TCP, UDP, and TLS traffic. It is optimized for high performance and can handle millions of requests per second with low latency.
+- In the context of EKS, the choice of load balancer depends on the specific requirements of your application.
