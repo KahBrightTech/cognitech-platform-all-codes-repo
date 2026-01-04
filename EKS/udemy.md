@@ -1749,3 +1749,15 @@ spec:
 - Unlike with the classic load balancer you need to specify the annotation `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"` to indicate that you want to create a network load balancer.
 
 #### AWS Application Load Balancer and Ingress Overview:
+- An application load balancer (ALB) is a type of load balancer provided by AWS that operates at the application layer (Layer 7) of the OSI model.
+- ALB is designed to handle HTTP and HTTPS traffic and provides advanced routing features, such as path-based routing, host-based routing, and support for WebSockets.
+- Key features of Application Load Balancer include:
+  - Advanced Routing: ALB supports path-based routing, host-based routing, and query string or header-based routing, allowing you to route traffic based on the content of the request.
+  - SSL/TLS Termination: ALB supports SSL/TLS termination, allowing you to offload the SSL/TLS processing from your backend instances.
+  - WebSocket Support: ALB supports WebSocket connections, enabling real-time communication between clients and servers.
+  - Health Checks: ALB performs health checks on registered targets to ensure that traffic is only routed to healthy instances.
+  - Integration with AWS Services: ALB integrates seamlessly with other AWS services, such as Amazon EC2, Amazon ECS, and Amazon EKS.
+- It allows user authentication through their corporate directory using AWS Cognito or any OpenID Connect (OIDC) compatible identity provider.
+- It supports containerized applications and microservices architectures by allowing routing based on URL paths and hostnames.
+- Suppports monitoring the health of each service independently as the checks are set at the target group level.
+- Also supoorts registering targets by Ip address including targets outside the VPC making it more flexible.
