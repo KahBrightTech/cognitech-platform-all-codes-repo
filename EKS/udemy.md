@@ -1710,7 +1710,7 @@ kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql 
 - Exit the mysql client by typing `exit` and pressing Enter.
 - Now you can proceed to deploy the user management microservice in EKS, which will connect to the RDS instance using the `usermgmt` schema.
 
-#### AWS Elastic Load Balancer Overciew:
+#### AWS Classic Load Balancer Overview:
 - AWS has 3 types of load balancers:
   1. Application Load Balancer (ALB)
   2. Network Load Balancer (NLB)
@@ -1720,3 +1720,32 @@ kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql 
 - Application Load Balancer (ALB) operates at the application layer (Layer 7) and is designed to handle HTTP and HTTPS traffic. It provides advanced routing features, such as path-based routing, host-based routing, and support for WebSockets.
 - Network Load Balancer (NLB) operates at the transport layer (Layer 4) and is designed to handle TCP, UDP, and TLS traffic. It is optimized for high performance and can handle millions of requests per second with low latency.
 - In the context of EKS, the choice of load balancer depends on the specific requirements of your application.
+
+#### AWS NetworkLoad Balancer Overview:
+- Network Load Balancer (NLB) is a type of load balancer provided by AWS that operates at the transport layer (Layer 4) of the OSI model.
+- NLB is designed to handle high volumes of traffic with low latency and high throughput, making it suitable for applications that require extreme performance and scalability.
+- Key features of Network Load Balancer include:
+  - High Performance: NLB is optimized for handling millions of requests per second while maintaining ultra-low latencies.
+  - Static IP Addresses: NLB provides a single static IP address per Availability Zone, which can be used as the front-end for your applications.
+  - TLS Termination: NLB supports TLS termination, allowing you to offload the SSL/TLS processing from your backend instances.
+  - Health Checks: NLB performs health checks on registered targets to ensure that traffic is only routed to healthy instances.
+  - Integration with AWS Services: NLB integrates seamlessly with other AWS services, such as Amazon EC2, Amazon ECS, and Amazon EKS.
+- To create a network load balancer in kubernetes, you can use the following service manifest:
+```yamlapiVersion: v1 
+kind: Service
+metadata:
+  name: my-nlb-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+```
+- Unlike with the classic load balancer you need to specify the annotation `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"` to indicate that you want to create a network load balancer.
+
+#### AWS Application Load Balancer and Ingress Overview:

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ExternalName
+  externalName: int-preproduction-use1-shared-eks-mysql-db.c0nwwcyeemwq.us-east-1.rds.amazonaws.com # This is the RDS endpoint created as part of InfraGrid setup
