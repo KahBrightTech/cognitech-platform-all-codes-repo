@@ -1892,3 +1892,100 @@ spec:
         paths:  
 ```
 - But since that is set we do not need to define the spec.ingressClassName in the ingress resource.
+
+#### ALB Ingress Basics Using AWS Application Load Balancer: 
+- Ingress annotations are the load balancer specific configurations that can be applied to an ingress resource in Kubernetes.
+- These annotations allow you to customize the behavior of the load balancer created by the ingress controller.
+- Some common ingress annotations for AWS Application Load Balancer (ALB) include:
+  - `alb.ingress.kubernetes.io/scheme`: Specifies whether the ALB should be internet-facing or internal. Possible values are `internet-facing` and `internal`.
+  - `alb.ingress.kubernetes.io/target-type`: Specifies the target type for the ALB. Possible values are `instance` (default) and `ip`.
+  - `alb.ingress.kubernetes.io/listen-ports`: Specifies the ports that the ALB should listen on. You can define multiple ports in a JSON array format.
+  - `alb.ingress.kubernetes.io/healthcheck-path`: Specifies the path for the health check endpoint used by the ALB to determine the health of the targets.
+  - `alb.ingress.kubernetes.io/healthcheck-interval-seconds`: Specifies the interval (in seconds) between health checks.
+  - `alb.ingress.kubernetes.io/healthcheck-timeout-seconds`: Specifies the timeout (in seconds) for each health check request.
+  - `alb.ingress.kubernetes.io/healthy-threshold-count`: Specifies the number of consecutive successful health checks required before considering a target healthy.
+  - `alb.ingress.kubernetes.io/unhealthy-threshold-count`: Specifies the number of consecutive failed health checks required before considering a target unhealthy.
+- We also need to specify the ingress class using the following annotation:
+```yaml
+annotations:
+  kubernetes.io/ingress.class: alb
+```
+- Also underneath the ingress spec we define the routing rules for the application.
+- Here is an example ingress manifest that uses some of the above annotations:
+```yamlapiVersion: networking.k8s.io/v1 
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+spec:
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+- In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` to the `my-service` service on port 80.
+- The annotations specify that the ALB should be internet-facing, use IP target type, and configure health checks with the specified parameters.
+- You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
+- You can also specify which subnets and security groups to use for the ALB using the following annotations:
+```yaml
+alb.ingress.kubernetes.io/subnets: subnet-abc123,subnet-def456
+alb.ingress.kubernetes.io/security-groups: sg-abc123
+```
+- The `alb.ingress.kubernetes.io/subnets` annotation allows you to specify the subnets in which the ALB should be created.
+- The `alb.ingress.kubernetes.io/security-groups` annotation allows you to specify the security groups to associate with the ALB.
+
+##### Demo with defaukt backend: 
+- In this demo we will create an ingress resource with a default backend service.
+- The default backend service will handle all requests that do not match any specific rules defined in the ingress resource. 
+- Here the pods containeing the application will be fronted by a nodeport services and the ingress will route traffic to the nodeport service. 
+- So when a user tries to access the application using the ALB DNS name, the request will be routed to the nodeport service, which will then forward the request to one of the pods running the application. 
+- The below diagram illustrates this flow:
+![ALB Ingress with Default Backend](screenshots/pic2.png)
+```
+# Annotations Reference: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-nginxapp1
+  labels:
+    app: app1-nginx
+  annotations:
+    # Load Balancer Name
+    alb.ingress.kubernetes.io/load-balancer-name: app1ingress
+    #kubernetes.io/ingress.class: "alb" (OLD INGRESS CLASS NOTATION - STILL WORKS BUT RECOMMENDED TO USE IngressClass Resource) # Additional Notes: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.3/guide/ingress/ingress_class/#deprecated-kubernetesioingressclass-annotation
+    # Ingress Core Settings
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Health Check Settings
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-path: /app1/index.html    
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+spec:
+  ingressClassName: my-aws-ingress-class # Ingress Class
+  defaultBackend:
+    service:
+      name: app1-nginx-nodeport-service
+      port:
+        number: 80   
+```
+- In this example, we define an ingress resource named `ingress-nginxapp1` with a default backend service named `app1-nginx-nodeport-service` on port 80.
+- The annotations specify the load balancer name, scheme, and health check settings for the ALB.
+- The `defaultBackend` section specifies the service that will handle all requests that do not match
