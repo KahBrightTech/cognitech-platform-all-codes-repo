@@ -1761,3 +1761,78 @@ spec:
 - It supports containerized applications and microservices architectures by allowing routing based on URL paths and hostnames.
 - Suppports monitoring the health of each service independently as the checks are set at the target group level.
 - Also supoorts registering targets by Ip address including targets outside the VPC making it more flexible.
+
+##### ALB Ingress Controller:
+- The ALBIC is a Kubernetes controller that integrates with AWS Application Load Balancer (ALB) to provide ingress functionality for Kubernetes clusters running on AWS.
+- It triggers the creation of an ALB and tyhe necessary supporting AWS resources when ingress resources are created in the Kubernetes cluster with the kubernetes.io/ingress.class: alb annotation.
+- It supports 2 traffic modes: Instance and IP mode.
+- Documentation reference is at https://kubernetes-sigs.github.io/aws-alb-ingress-controller/
+###### Instance mode:
+- Here the ALB routes traffic to the worker node instances, which then forward the traffic to the appropriate pods based on the node's kube-proxy rules. 
+- The traffic reaching the ALB is routed to NodePort of the service, and then kube-proxy on the node forwards the traffic to the appropriate pod. 
+- The above is the default mode of operation for the ALB Ingress Controller. 
+- You can explicitly set the mode to instance by using the following annotation in the ingress manifest:
+```yamlannotations:
+  alb.ingress.kubernetes.io/target-type:instance
+```
+###### IP mode:
+- Here the ALB routes traffic directly to the pod IP addresses, bypassing the worker nodes
+- This mode provides better performance and lower latency since the traffic does not have to go through the worker nodes.
+- To use IP mode, you need to set the following annotation in the ingress manifest:
+```yamlannotations:
+  alb.ingress.kubernetes.io/target-type:ip
+```
+- When using fargate profiles with EKS, you must use IP mode for the ALB Ingress Controller since there are no worker nodes to route traffic through.
+
+##### How ALB Ingress works: 
+- The ALB Ingress Controller watches for ingress resources in the Kubernetes cluster.
+- When an ingress resource is created, the controller creates an ALB and the necessary supporting AWS resources, such as target groups and listeners.
+- The controller configures the ALB to route traffic based on the rules defined in the ingress
+- resource.
+- The ALB forwards traffic to the target groups, which contain the IP addresses or instance IDs of the pods that are serving the application.
+- The ALB Ingress Controller continuously monitors the ingress resources and updates the ALB configuration as needed.
+- To deploy the ALB Ingress Controller in your EKS cluster, you can follow the instructions in the official documentation: https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/controller/setup/
+- Once the ALB Ingress Controller is deployed, you can create ingress resources in your Kubernetes cluster to define the routing rules for your applications.
+- Here is an example ingress manifest that uses the ALB Ingress Controller:
+```yamlapiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+spec:
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:  
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: my-service
+                  port:
+                    number: 80
+```
+- In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` to the `my-service` service on port 80.
+- The annotations specify that the ALB Ingress Controller should be used and that the ALB should be internet-facing.
+- The loadbalancer is oif type elbv2 which is the application load balancer.
+- You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
+- Deleting the ingress resource will also delete the associated ALB and supporting AWS resources created by the ALB Ingress Controller.
+
+##### ALB Controller: 
+- The AWS Load Balancer Controller is a Kubernetes controller that manages AWS Elastic Load Balancers (ELB) for a Kubernetes cluster.
+- It supports both Application Load Balancers (ALB) and Network Load Balancers (NLB).
+- The AWS Load Balancer Controller is the successor to the AWS ALB Ingress Controller and provides additional features and improvements.
+- Key features of the AWS Load Balancer Controller include:
+  - Support for both ALB and NLB: The controller can manage both types of load balancers, allowing you to choose the best option for your application.
+  - Enhanced security features: The controller supports AWS WAF (Web Application Firewall) integration, allowing you to protect your applications from common web exploits.
+  - Improved performance: The controller includes optimizations for better performance and scalability, making it suitable for large-scale applications.
+  - Support for additional Kubernetes resources: The controller can manage additional Kubernetes resources, such as Services of type LoadBalancer and Ingress resources.
+- Its created in the kube-system namespace by default.
+- To deploy the AWS Load Balancer Controller in your EKS cluster, you can follow the instructions in the official documentation: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/deploy/installation/
+- We have to create an iam role and service account for the controller to work properly.
+- The vpc id and the region are needed wwhen creating the load balancer controller when using ec2 nodes with restricted instance metdata or when using fargate profiles.
+- To verify that the AWS Load Balancer Controller is running, you can use the following command:
+```kubectl get deployment -n kube-system aws-load-balancer-controller```
+- This will show you the status of the controller deployment in the kube-system namespace.
