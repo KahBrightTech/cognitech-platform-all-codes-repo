@@ -1989,3 +1989,31 @@ spec:
 - In this example, we define an ingress resource named `ingress-nginxapp1` with a default backend service named `app1-nginx-nodeport-service` on port 80.
 - The annotations specify the load balancer name, scheme, and health check settings for the ALB.
 - The `defaultBackend` section specifies the service that will handle all requests that do not match
+- The ingress manifest can either containe defaault backend or routing rules but not both at the same time.
+- The default backend is used when there are no matching rules for the incoming request.
+- This simply forwards all requests to the specified service.
+- The rules section is used to define specific routing rules based on the host and path of the incoming request.
+- Here is an example of an ingress manifest with routing rules:
+```yamlapiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+spec:
+  rules:
+    - host: myapp.example.com
+      http:
+        paths: 
+          - path: /app1
+            pathType: Prefix
+            backend:
+              service:
+                name: app1-service
+                port:
+                  number: 80
+```
+- In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` and path `/app1` to the `app1-service` service on port 80.
+- If a request does not match any of the defined rules, it will result in a 404 Not Found error.
+- You cannot have both `defaultBackend` and `rules` defined in the same ingress resource
