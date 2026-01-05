@@ -1838,3 +1838,37 @@ spec:
 - This will show you the status of the controller deployment in the kube-system namespace.
 - You can also check the service account created for the controller using the following command:
 ```kubectl get serviceaccount -n kube-system aws-load-balancer-controller```
+
+##### AWS Load balancer Igress Class:
+- Some eks clusters can be asscociated with multiple ingress controllers. This can be useful for different teams or applications that require different ingress configurations.
+- However how do we specify which ingress controller to use for a particular ingress resource?
+- This is where ingress classes come into play. It allows you to specify which ingress controller should manage a particular ingress resource.
+- The ingress class determines which controller will manage the ingress resource. 
+- To specify the ingress class for the AWS Load Balancer Controller, you can use the following annotation in your ingress manifest:
+```yamlannotations:
+  kubernetes.io/ingress.class: alb
+```
+- This annotation tells Kubernetes to use the AWS Load Balancer Controller to manage the ingress resource.
+- Here is an example ingress manifest that uses the AWS Load Balancer Controller:
+```yamlapiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+spec:
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: my-service
+                  port:
+                    number: 80
+- In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` to the `my-service` service on port 80.
+- The annotations specify that the AWS Load Balancer Controller should be used and that the ALB should be internet-facing.
+- You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
