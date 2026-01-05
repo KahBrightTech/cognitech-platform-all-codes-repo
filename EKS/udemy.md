@@ -1872,3 +1872,23 @@ spec:
 - In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` to the `my-service` service on port 80.
 - The annotations specify that the AWS Load Balancer Controller should be used and that the ALB should be internet-facing.
 - You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
+- If the ingress class is not defined as is-default-class:true then in ingress resource we need to define the spec.ingressClassName in ingress resource. 
+```
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: my-aws-ingress-class
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: ingress.k8s.aws/alb
+```
+- In the above yaml file if line 1882 is not defined then in the ingress resource we need to define the spec.ingressClassName as shown below:
+```yamlspec:
+  ingressClassName: my-aws-ingress-class
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:  
+```
+- But since that is set we do not need to define the spec.ingressClassName in the ingress resource.
