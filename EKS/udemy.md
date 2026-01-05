@@ -1836,3 +1836,5 @@ spec:
 - To verify that the AWS Load Balancer Controller is running, you can use the following command:
 ```kubectl get deployment -n kube-system aws-load-balancer-controller```
 - This will show you the status of the controller deployment in the kube-system namespace.
+- You can also check the service account created for the controller using the following command:
+```kubectl get serviceaccount -n kube-system aws-load-balancer-controller```
