@@ -38,6 +38,13 @@ spec:
             name: account-nodeport-service
             port:
               number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hway-nodeport-service
+            port:
+              number: 80
 
 # You can also create a separate ingress for account service as shown below
 # ---
