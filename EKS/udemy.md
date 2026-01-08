@@ -2017,3 +2017,49 @@ spec:
 - In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` and path `/app1` to the `app1-service` service on port 80.
 - If a request does not match any of the defined rules, it will result in a 404 Not Found error.
 - You cannot have both `defaultBackend` and `rules` defined in the same ingress resource
+- For path path of type / and path type of type prefix all path will be matched. 
+- For path type of type exact only exact path matches will be routed.
+- For instance if we have the following paths defined:
+  - /app1 (Prefix)
+  - /app2 (Exact)
+- A request to /app1/home will be routed to app1 service. 
+- A request to /app2 will be routed to app2 service.
+- A request to /app2/home will result in a 404 Not Found error since it does not exactly match /app2.
+- This can be found in the official documentation: https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+
+#####AWS ALB Ingress context path based routing: 
+- When deploying to multiple pods and using thesame ingress rule the health check paths are added at the level of the service for each target group created by the ALB Ingress Controller.
+- This means that the alb.ingress.kubernetes.io/healthcheck-path: will be set at the level of the service and not at the level of the ingress rule.
+- Therefore all services behind the ingress must have the same health check path leading to their respective health check endpoints.
+- For example if we have 2 services app1 and app2 behind the same ingress with the following ingress manifest:
+```yamlapiVersion: networking.k8s.io/v1 
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /health 
+spec:
+  rules:  
+    - host: myapp.example.com
+      http:
+        paths: 
+        - path: /app1
+          pathType: Prefix
+          backend:
+            service:
+              name: app1-service
+              port:
+                number: 80
+        - path: /app2
+          pathType: Prefix
+          backend:
+            service:
+              name: app2-service
+              port:
+                number: 80
+```
+- In this example, both app1 and app2 services must have a health check endpoint at /health.
+- If app1 has a health check endpoint at /app1/health and app2 has a health check endpoint at /app2/health, the health checks will fail since the ALB Ingress Controller will use /health for both services.
+- To work around this limitation, you can create separate ingress resources for each service with their own health check paths.
