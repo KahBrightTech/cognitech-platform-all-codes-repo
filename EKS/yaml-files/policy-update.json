@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowGetAndPutSecret",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-east-1:730335294148:secret:int-preproduction-use1-shared-*",
+        "arn:aws:secretsmanager:us-east-1:730335294148:secret:int-preproduction-use1-GitHub-Credentials-*"
+      ]
+    }
+  ]
+}
