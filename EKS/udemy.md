@@ -2063,3 +2063,7 @@ spec:
 - In this example, both app1 and app2 services must have a health check endpoint at /health.
 - If app1 has a health check endpoint at /app1/health and app2 has a health check endpoint at /app2/health, the health checks will fail since the ALB Ingress Controller will use /health for both services.
 - To work around this limitation, you can create separate ingress resources for each service with their own health check paths.
+- Important Note-1: In path based routing order is very important, if we are going to use  "/*" (Root Context), try to use it at the end of all rules. 
+- This is because if the root context is used at the beginning of the rules, all other paths will be ignored as the root context will match all requests.
+- So never use root context at the beginning of the rules as it will override all other paths.
+- Important Note-2: When using path-based routing with ALB Ingress Controller, ensure that the health check paths for all services are consistent and reachable.
