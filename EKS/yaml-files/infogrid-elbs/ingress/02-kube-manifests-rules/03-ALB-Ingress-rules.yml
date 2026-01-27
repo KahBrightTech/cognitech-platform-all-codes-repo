@@ -26,7 +26,7 @@ metadata:
     ## External DNS
     external-dns.alpha.kubernetes.io/hostname: microservice.shared.cognitechllc.org
 spec:
-  ingressClassName: multi-app-ingress-class
+  ingressClassName: app-ingress-class
   rules:
   - host: microservice.shared.cognitechllc.org
     http:
@@ -76,7 +76,7 @@ spec:
 #     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:730335294148:certificate/1e081677-3567-4cf2-9739-b11927661038
 #     alb.ingress.kubernetes.io/security-groups: sg-056e0f9a46dc3782d # This is the alb security group to allow inbound traffic on 443
 # spec:
-#   ingressClassName: multi-app-ingress-class
+#   ingressClassName: app-ingress-class
 #   rules:
 #   - host: microservice.shared.cognitechllc.org
 #     http:

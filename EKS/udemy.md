@@ -2107,3 +2107,8 @@ So even though your IAM policy allows deleting records (ChangeResourceRecordSets
 - To check the external dns policy run the following helm command:
 ```helm get values external-dns -n kube-system```
 - This only works if it was installed using helm.
+
+#####Kubernetes Service demo with external dns:
+- In this demo we will create a kubernetes service of type loadbalancer with external dns to automatically create a dns record in route53.
+- In this case external dns will create a dns record for the service in route53.
+- See section 08-08 for more details.
