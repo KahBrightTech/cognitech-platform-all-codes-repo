@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+  labels:
+    app: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: njibrigthain100/brigthain:multi-app-latestv3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-deployment
+  labels:
+    app: account
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: account
+  template:
+    metadata:
+      labels:
+        app: account
+    spec:
+      containers:
+      - name: account
+        image: njibrigthain100/brigthain:multi-app-latestv3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hway-deployment
+  labels:
+    app: hway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hway
+  template:
+    metadata:
+      labels:
+        app: hway
+    spec:
+      containers:
+      - name: hway
+        image: njibrigthain100/brigthain:hwv3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-nodeport-service
+  labels:
+    app: app
+  annotations:
+spec:
+  type: NodePort
+  selector:
+    app: app
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-nodeport-service
+  labels:
+    app: account
+spec:
+  type: NodePort
+  selector:
+    app: account
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hway-nodeport-service
+  labels:
+    app: hway
+  annotations:
+spec:
+  type: NodePort
+  selector:
+    app: hway
+  ports:
+  - port: 80
+    targetPort: 80

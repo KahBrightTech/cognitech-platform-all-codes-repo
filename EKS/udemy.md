@@ -2067,3 +2067,43 @@ spec:
 - This is because if the root context is used at the beginning of the rules, all other paths will be ignored as the root context will match all requests.
 - So never use root context at the beginning of the rules as it will override all other paths.
 - Important Note-2: When using path-based routing with ALB Ingress Controller, ensure that the health check paths for all services are consistent and reachable.
+
+#####AWS ALB Ingress SSL:
+- To enable SSL termination on the AWS Application Load Balancer (ALB) created by the ALB Ingress Controller, you need to configure the ingress resource with the appropriate annotations and specify the SSL certificate to be used.
+#####AWS ALB Ingress SSL redirects:
+- To configure SSL redirection on the AWS Application Load Balancer (ALB) created by the ALB Ingress Controller, you can use the following annotation in your ingress manifest:
+```yaml
+alb.ingress.kubernetes.io/ssl-redirect: "443"
+```
+- This annotation tells the ALB to redirect all HTTP traffic (port 80) to HTTPS (port 443).
+
+#####AWS ALB Ingress External DNS Install and Implementation for Ingress and Service:
+- in the previous section we manually created a DNS record in Route53 to point to the ALB created by the ALB Ingress Controller.
+- However, this can be automated using the External DNS tool.
+- External DNS is a Kubernetes add-on that automatically manages DNS records for your Kubernetes resources, such as services and ingresses.
+- It supports multiple DNS providers, including AWS Route53.
+- To install External DNS in your EKS cluster, you can follow the instructions in the official documentation:
+- We will create a service account, iam role and policy for external dns to work properly with route53.
+- Once External DNS is deployed, it will automatically create and manage DNS records for your services and ingresses based on the annotations you specify in your manifests.
+- To use External DNS with the ALB Ingress Controller, you need to add the following annotation to your ingress manifest:
+```yaml
+external-dns.alpha.kubernetes.io/hostname: myapp.example.com
+```
+- This annotation tells External DNS to create a DNS record for the specified hostname and point it to the ALB created by the ALB Ingress Controller.
+- See section 08-06
+- extrernal service works with IRSA preferably. So the service account created for external dns should be associated with an iam role that has the necessary permissions to manage Route53 records.
+1. IAM Policy (JSON file you're showing)
+This defines AWS permissions - what External DNS is allowed to do in AWS Route53:
+route53:ChangeResourceRecordSets - Can create/update/delete DNS records
+route53:ListHostedZones - Can list hosted zones
+route53:ListResourceRecordSets - Can read existing DNS records
+2. external_dns_policy = "upsert-only" (Terraform parameter)
+This defines External DNS behavior - what External DNS will actually do with those permissions:
+"upsert-only" (recommended): Only creates and updates DNS records. Will NOT delete records even if you delete the Kubernetes resource. Safer option.
+"sync": Full synchronization - creates, updates, AND deletes DNS records to match Kubernetes state. More aggressive.
+Example:
+IAM Policy says: "You CAN delete DNS records" (permission granted)external_dns_policy = "upsert-only" says: "But I WON'T delete them" (behavior choice)
+So even though your IAM policy allows deleting records (ChangeResourceRecordSets), the "upsert-only" policy tells External DNS not to use that capability for deletions. If you set it to "sync", External DNS would then actually delete records when resources are removed.
+- To check the external dns policy run the following helm command:
+```helm get values external-dns -n kube-system```
+- This only works if it was installed using helm.
