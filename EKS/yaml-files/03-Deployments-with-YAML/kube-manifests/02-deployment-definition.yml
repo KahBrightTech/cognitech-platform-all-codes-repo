@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp3-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp3
+  template:
+    metadata:
+      name: myapp3-pod
+      labels:
+        app: myapp3
+    spec:
+      containers:
+      - name: myapp3-container
+        image: njibrigthain100/brigthain:hwv3
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi" # Minimum memory required
+            cpu: "250m" # Minimum CPU required (0.25 cores)
+          limits:
+            memory: "128Mi" # Maximum memory allowed
+            cpu: "500m" # Maximum CPU allowed (0.5 cores)
+
+        # Environment variables
+        env:
+        - name: APP_ENV
+          value: "development"
+        - name: APP_PORT
+          value: "80"
+        - name: APP_NAME
+          value: "myapp"

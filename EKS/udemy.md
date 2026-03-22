@@ -1,4 +1,113 @@
 ### AWS EKS - Elastic Kubernetes Service (Udemy Course)
+What is Kubernetes?
+Kubernetes is an open-source container orchestration platform designed to automate the deployment, scaling, and management of containerized applications. It provides a framework for running distributed systems resiliently, allowing developers to manage microservices architectures with ease. Kubernetes abstracts away the underlying infrastructure, enabling developers to focus on building applications without worrying about the complexities of the environment in which they run.
+Containers are:
+    1. Easy to create multiple containers
+    2. Lightweight and portable
+    3. Provide process isolation
+    4. Can be easily scaled
+    5. Easy to tear down and rebuild
+    6. works thesame way no matter where they are deployed
+Problems with running containers as we are:
+    1. Host machine runs out of resources
+    2. containers die and get ignored
+    3. host machine goes down taking everything with it
+Kubernetes solves these problems by:
+    1. Kubernetes containers are placed in kubernetes objects called pods which are wrappers placed around the container. kubernetes manages pods not containers so by putting them together in one unit makes it easy to control
+    2. Kubernetes containers need to draw their resources in a virtual machine which are called nodes. you can add multiple nodes to thesame environment. When you do that you end up exponentially increasing the available resources for your containers.
+    3. When you combine all nodes together you get a kubernetes cluster. A kubernetes cluster is a collection of nodes that work together to provide resources for your containers. If one node goes down the other nodes in the cluster can take over and keep your containers running.
+    4. There are 2 flavors of nodes. One is called the master node (controller node) and the other is called the worker node. The master node is responsible for managing the cluster and the worker nodes are responsible for running the containers. The master node runs a component called the kube-apiserver which is the main entry point for all kubernetes commands. The kube-apiserver communicates with the other components of the master node to manage the cluster. The worker nodes run a component called the kubelet which is responsible for communicating with the master node and managing the pods on the worker node. Each worker node can run one or multiple pods.
+    5. The master node also runs a component called the etcd which is a distributed key-value store that stores all the configuration data for the cluster. The etcd is responsible for maintaining the state of the cluster and ensuring that all the nodes are in sync.
+
+What is happening under the hood in kubernetes:
+    1. kubectl is the cli tool that will be installed on your local machine to interact with the kubernetes cluster. When you run a kubectl command it communicates with the kube-apiserver on the master node to perform the requested action.
+    2. The kube-apiserver then communicates with the other components of the master node
+    3. A kube config file is a document that contains the information needed to connect to a kubernetes cluster. It typically includes the cluster's API server endpoint, authentication information, and other settings. an example is
+    apiVersion: v1
+    clusters:
+      - cluster:
+          server: https://<API_SERVER_ENDPOINT>
+          certificate-authority: <PATH_TO_CA_CERTIFICATE>
+        name: <CLUSTER_NAME>
+    4. The api server is what will be returning the information to kubectl when you run a command. The api server is the main entry point for all kubernetes commands and it communicates with the other components of the master node to manage the cluster.
+    5. It also reaches out to the other nodes that are part of our cluster to get information about the pods that are running on those nodes.
+    6. It also talks to etcd to store and retrieve configuration data for the cluster. The etcd is a distributed key-value store that stores all the configuration data for the cluster. The etcd is responsible for maintaining the state of the cluster and ensuring that all the nodes are in sync. etcd is third party tool that kubernetes uses to store its data. Be very respectful of etcd as it is the brain of the cluster. If etcd goes down the entire cluster goes down.
+    7. The scheduler is responsible for scheduling pods on the worker nodes. The scheduler looks at the available resources on each node and decides which node is best suited to run the pod. The scheduler also takes into account any constraints that are specified in the pod's configuration, such as node affinity or taints and tolerations.
+    8. The controller manager is responsible for managing the various controllers that are running in the cluster. Controllers are responsible for ensuring that the desired state of the cluster is maintained. For example, if a pod is deleted, the replication controller will create a new pod to replace it. The controller manager also manages other controllers such as the node controller, which is responsible for monitoring the status of the nodes in the cluster, and the endpoint controller, which is responsible for managing the endpoints for services.
+    The controller manager (and therefore all the controllers it runs) is part of the control plane, which typically resides on the master node(s) in a Kubernetes cluster.
+      🧠 Kubernetes Node Types
+      There are two broad categories of nodes:
+      Control Plane Node(s) (sometimes called master nodes)
+      → Manage the cluster — they don’t run user workloads.
+      Worker Nodes
+      → Run your application Pods.
+      ⚙️ Control Plane Components (on the Master Node)
+      Component	Description
+      kube-apiserver	The front end for the Kubernetes control plane — all requests go through this API.
+      etcd	The key-value store that holds all cluster data (the single source of truth).
+      kube-scheduler	Decides which node a new Pod should run on.
+      kube-controller-manager	Runs controllers that maintain the desired state of the cluster.
+      cloud-controller-manager (optional)	Handles interactions with the underlying cloud provider (e.g., AWS, Azure).
+      🧩 Where Controllers Fit
+      **Each controller runs inside the kube-controller-manager process.**
+      The controller manager itself runs on the master/control plane node.
+      It communicates with the API server, not directly with nodes or pods.
+      When it detects a difference between the desired and current state, it updates the API server — and then other components (like the scheduler or kubelet) act on those changes.
+      🔁 Example Flow
+      You create a Deployment (desired state = 3 replicas).
+      The Deployment controller (running in the controller manager on the master) notices only 1 Pod exists.
+      It asks the API server to create 2 more Pods.
+      The scheduler assigns those Pods to worker nodes.
+      The kubelet on each worker node runs them.
+      🧭 Summary
+      Item	Location	Purpose
+      Controller Manager	Master node (control plane)	Runs controllers that keep cluster state in sync
+      Controllers	Inside the controller manager	Each maintains a specific aspect (e.g., Pods, Nodes, Volumes)
+      Worker Nodes	Run workloads (Pods)	Execute what the control plane instructs
+    ![pic1](./screenshots/pic1.png)
+    9. Kubelet: This is present on every single node in the cluster. The kubelet is responsible for communicating with the master node and managing the pods on the worker node. The kubelet ensures that the containers in the pod are running and healthy. If a container dies, the kubelet will restart it. The kubelet also reports the status of the pods to the master node. This is the eyes and the ears of the nodes. All instructions coming from the controller node go through the kubelet. The kubelet is responsible for ensuring that the desired state of the pod is maintained. If a pod is deleted, the kubelet will ensure that a new pod is created to replace it.
+    10. Containers runtime: This is the software that is responsible for running the containers. Kubernetes supports several different container runtimes, including Docker, containerd, and CRI-O. The container runtime is responsible for pulling the container image from a registry, creating the container, and starting the container. The container runtime also monitors the health of the container and reports the status to the kubelet.
+     ![pic2](./screenshots/pic2.png)
+    11. There are many types of apis in kubernetes. The most common are:
+        a. Core API: This is the main api that is used to manage the core resources in kubernetes, such as pods, services, and deployments. The core api is versioned and the current version is v1.
+        b. Apps API: This api is used to manage applications in kubernetes, such as deployments, statefulsets, and daemonsets. The apps api is versioned and the current version is v1.
+        c. Batch API: This api is used to manage batch jobs in kubernetes, such as cronjobs and jobs. The batch api is versioned and the current version is v1.
+        d. Networking API: This api is used to manage networking resources in kubernetes, such as ingress and network policies. The networking api is versioned and the current version is v1.
+        e. Custom Resource Definitions (CRDs): This api allows users to define their own custom resources in kubernetes. CRDs are not part of the core kubernetes api and are not versioned.
+    12. Restarts on a pod can be caused by several factors, including:
+        a. Application crashes: If the application running inside the container crashes or exits unexpectedly, the pod will be restarted by the kubelet.
+        b. Resource constraints: If the pod exceeds its resource limits (CPU, memory, etc.), the kubelet may terminate the pod and restart it to free up resources.
+        c. Node failures: If the node hosting the pod fails or becomes unreachable, the pod will be rescheduled to another node and restarted.
+        d. Liveness and readiness probes: If a liveness probe fails, indicating that the application is not healthy, the kubelet will restart the pod. Similarly, if a readiness probe fails, the pod may be restarted to ensure it becomes ready to serve traffic.
+        e. Manual intervention: An administrator may manually delete or restart a pod for maintenance or troubleshooting purposes.
+        f. Configuration changes: Changes to the pod's configuration (e.g., updating environment variables or volume mounts) may trigger a restart of the pod to apply the new settings.
+Kubernetes cli commands:
+    1. Kubectl get: This command is used to retrieve information about the resources in the cluster. The syntax for this command is kubectl get <resource_type> <resource_name>. For example, to get a list of all pods in the cluster, you would run kubectl get pods.
+    2. kubectl apply: This command is used to create or update resources in the cluster. The syntax for this command is kubectl apply -f <file_name>. For example, to create a new deployment from a yaml file, you would run kubectl apply -f deployment.yaml.
+    3. kubectl describe: This command is used to get detailed information about a specific resource in the cluster. The syntax for this command is kubectl describe <resource_type> <resource_name>. For example, to get detailed information about a specific pod, you would run kubectl describe pod <pod_name>. To describe a namespace you would run kubectl describe namespace <namespace_name>.
+    4. kubectl delete: This command is used to delete resources from the cluster. The syntax for this command is kubectl delete <resource_type> <resource_name>. For example, to delete a specific pod, you would run kubectl delete pod <pod_name>. you can also delete the mainfest file by running kubectl delete -f <file_name>.
+    5. kubectl logs: This command is used to retrieve the logs from a specific pod. The syntax for this command is kubectl logs <pod_name>. For example, to get the logs from a specific pod, you would run kubectl logs <pod_name>.
+    6. kubectl namespace: This command is used to manage namespaces in the cluster. The syntax for this command is kubectl get namespaces to get a list of all namespaces in the cluster, kubectl create namespace <namespace_name> to create a new namespace, and kubectl delete namespace <namespace_name> to delete a specific namespace. When creating objects if you dont specify where the object is to go it will go to a default location. Command to see pods running in a particular namespace is kubectl get pods -n <namespace_name>. Also deleteing the pods in a particular namespace is kubectl delete pod <pod_name> -n <namespace_name>.
+    7. kubectl exec: This command is used to execute a command inside a specific pod. The syntax for this command is kubectl exec -it <pod_name> -- `<command>`. For example, to open a bash shell inside a specific pod, you would run kubectl exec -it <pod_name> -- /bin/bash.
+    8. kubectl port-forward: This command is used to forward a port from a specific pod to your local machine. The syntax for this command is kubectl port-forward <pod_name> <local_port>:<pod_port>. For example, to forward port 8080 from a specific pod to your local machine, you would run kubectl port-forward <pod_name> 8080:80.
+
+Resource quotas:
+    1. They attach to namespaces and limit the amount of resources that can be used in that namespace. This is useful for preventing a single team or application from consuming all the resources in the cluster.
+    2. To create a resource quota, you need to create a yaml file that defines the resource quota. An example is:
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: my-resource-quota
+      namespace: demo
+    spec:
+      hard:
+        requests:
+          cpu: "1"
+          memory: "1Gi"
+        limits:
+          cpu: "2"
+          memory: "2Gi"
+Its a huge pain to upgrade the kubernetes as this updates the api versions and deprecates old ones. Always check the api versions before applying a manifest file. This can cause a lot of issues if you are not careful.
 #### Installing the 3 clis needed to work with EKS
 1. AWS CLI
     - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
@@ -35,11 +144,11 @@
 - Eks Cluster has 4 main components:
   1. Control Plane
   2. Worker Nodes and node groups
-  3. Fargat profiles 
+  3. Fargate profiles 
   4. VPC
 ##### EKS Control Plane:
 - The control plane is responsible for managing the Kubernetes cluster and consists of components such as the kube-apiserver, etcd (the cluster's data store), kube-scheduler, and kube-controller-manager.
-- It runs a single-tenant control plane for each EKS cluster and is not shared with other AWS accounts or across clusters.
+- It runs a single-tenant control plane for each EKS cluster and is not shared with other AWS accounts or across clusters. One control plane → One cluster (dedicated and isolated)
 - it consist of atleast 2 api server nodes and 3 etcd nodes that are distributed across 3 Availability Zones (AZs) for high availability.
 - EKS automatically detects and replaces unhealthy control plane instances restarting them across the azs within the region as needed. 
 - Its a managed service by AWS, meaning AWS takes care of the availability and scalability of the control plane.
@@ -91,6 +200,20 @@
 ```eksctl get cluster```
 ##### Create the IAM OIDC Provider:
 - To enable and use AWS roles for kubernetes service accounts on our EKS cluster we must create and associate OIOC provider with our EKS cluster.
+
+**Why is the IAM OIDC Provider needed?**
+- The IAM OIDC (OpenID Connect) provider enables **IAM Roles for Service Accounts (IRSA)**, which allows Kubernetes pods to securely access AWS services.
+- **Benefits of IRSA:**
+  1. **Fine-grained permissions**: Each pod can have its own IAM role with specific permissions, rather than all pods sharing the same EC2 instance profile
+  2. **Enhanced security**: No need to hardcode AWS credentials in application code, ConfigMaps, or Secrets
+  3. **Principle of least privilege**: Different applications can have different AWS permissions based on their needs
+  4. **Audit trail**: AWS CloudTrail can track which pod assumed which IAM role for better compliance and monitoring
+- **How it works:**
+  - Kubernetes service accounts are annotated with an IAM role ARN
+  - When a pod uses that service account, it can assume the associated IAM role
+  - The OIDC provider acts as a trusted identity provider that AWS IAM verifies
+  - This eliminates the need for instance profiles or storing credentials in pods
+
 - To create an IAM OIDC provider for our EKS cluster, run the following command:
 ```eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster eksdemo1 --approve```
 - This command associates an IAM OIDC provider with the specified EKS cluster in the given region.
@@ -217,22 +340,271 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 ```kubectl delete pod my-first-pod```
 
 ##### K8s service demo:
-- A kubernetes service is an abstraction that defines a logical set of pods and a policy by which to access them.
-- We can expose an application running on a set of pods using different types of services.
-- The most common types of services are:
-  1. ClusterIP: Exposes the service on a cluster-internal IP. This type makes the service only reachable from within the cluster.
-  2. NodePort: Exposes the service on each Node's IP at a static port (the NodePort). This type makes the service accessible from outside the cluster using <NodeIP>:<NodePort>. You cannot specify the nodeport when creating the service in an imperative way using kubectl. It will be automatically assigned from a range of ports (default: 30000-32767).
-  3. LoadBalancer: Exposes the service externally using a cloud provider's load balancer. This type creates an external load balancer that routes traffic to the service.
+
+**What is a Kubernetes Service?**
+- A Kubernetes Service is a stable network endpoint that provides access to a set of pods.
+- It acts as an internal load balancer and service discovery mechanism for your applications.
+
+**Why do we need Kubernetes Services?**
+- **Pods are ephemeral**: Pods can be created, destroyed, and replaced at any time (crashes, scaling, updates)
+- **Dynamic IP addresses**: Each time a pod is recreated, it gets a new IP address
+- **Problem**: How do other applications reliably connect to your pods when IPs keep changing?
+- **Solution**: Services provide a stable DNS name and IP address that remains constant, even as pods come and go behind the scenes
+
+**How Services Work:**
+- Services use **labels and selectors** to identify which pods they route traffic to
+- When you create a service, it continuously monitors pods with matching labels
+- The service automatically updates its list of healthy pod endpoints
+- Traffic sent to the service is load-balanced across all matching pods
+
+**Example Scenario:**
+```
+📱 User Request → 🔄 Service (stable endpoint) → 🎯 Pod 1, Pod 2, Pod 3 (dynamic)
+```
+Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffic to the healthy pods.
+
+**The Three Main Types of Services:**
+
+1. **ClusterIP (Default)**
+   - **Purpose**: Internal communication within the cluster only
+   - **Access**: Only accessible from inside the cluster
+   - **Use Case**: Backend services, databases, internal APIs that don't need external access
+   - **Example**: A frontend pod connecting to a backend API service
+   - **IP**: Gets a virtual IP that's only routable within the cluster
+
+   **ClusterIP Diagram:**
+   ```
+   ┌─────────────────────────────────────────────────────────────┐
+   │                    Kubernetes Cluster                       │
+   │                                                             │
+   │   ┌──────────────┐          ┌─────────────────────────┐   │
+   │   │ Frontend Pod │──────────▶│  ClusterIP Service      │   │
+   │   │              │          │  (10.100.200.50:80)     │   │
+   │   └──────────────┘          │  Virtual IP - Internal  │   │
+   │                              │  Only                   │   │
+   │                              └──────────┬──────────────┘   │
+   │                                         │                   │
+   │                         Load Balances to backend pods       │
+   │                                         │                   │
+   │                    ┌────────────────────┼────────┐         │
+   │                    ▼                    ▼        ▼         │
+   │              ┌─────────┐         ┌─────────┐ ┌─────────┐  │
+   │              │ Pod 1   │         │ Pod 2   │ │ Pod 3   │  │
+   │              │ (API)   │         │ (API)   │ │ (API)   │  │
+   │              │:8080    │         │:8080    │ │:8080    │  │
+   │              └─────────┘         └─────────┘ └─────────┘  │
+   │                                                             │
+   │   ❌ External users CANNOT access this service              │
+   └─────────────────────────────────────────────────────────────┘
+   ```
+
+2. **NodePort**
+   - **Purpose**: Expose your application to external traffic via worker node IPs
+   - **Access**: Accessible from outside the cluster using `<NodeIP>:<NodePort>`
+   - **Use Case**: Dev/test environments, quick external access without a load balancer
+   - **Port Range**: Automatically assigned from 30000-32767 (unless specified in YAML)
+   - **How it works**: Opens the same port on every worker node, forwards traffic to the service
+   - **Example**: Access your app at http://54.210.123.45:30080 from your browser
+   - **Note**: You cannot specify the nodeport when creating the service imperatively with kubectl; it's auto-assigned
+
+   **NodePort Diagram:**
+   ```
+   ┌──────────────┐
+   │ External User│  (Your Browser)
+   │  Internet    │
+   └──────┬───────┘
+          │ http://NodeIP:30080
+          │
+   ┌──────▼───────────────────────────────────────────────────────┐
+   │                    Kubernetes Cluster                         │
+   │                                                               │
+   │  ┌─────────────────┐    ┌─────────────────┐                 │
+   │  │  Worker Node 1  │    │  Worker Node 2  │  (All nodes     │
+   │  │  IP: 54.1.1.100 │    │  IP: 54.1.1.101 │   listen on     │
+   │  │  Port: 30080 ✅ │    │  Port: 30080 ✅ │   same port)    │
+   │  └────────┬────────┘    └────────┬────────┘                 │
+   │           │                      │                           │
+   │           └──────────┬───────────┘                           │
+   │                      ▼                                       │
+   │            ┌─────────────────────┐                           │
+   │            │  NodePort Service   │                           │
+   │            │  ClusterIP:80       │                           │
+   │            │  NodePort:30080     │                           │
+   │            └──────────┬──────────┘                           │
+   │                       │                                       │
+   │         ┌─────────────┼─────────────┐                        │
+   │         ▼             ▼             ▼                        │
+   │    ┌────────┐    ┌────────┐    ┌────────┐                  │
+   │    │ Pod 1  │    │ Pod 2  │    │ Pod 3  │                  │
+   │    │ :80    │    │ :80    │    │ :80    │                  │
+   │    └────────┘    └────────┘    └────────┘                  │
+   │                                                               │
+   │  ⚠️  Security Group must allow inbound traffic on port 30080  │
+   └───────────────────────────────────────────────────────────────┘
+   ```
+
+3. **LoadBalancer**
+   - **Purpose**: Production-grade external access using a cloud load balancer
+   - **Access**: Accessible via a dedicated external load balancer (ALB/NLB in AWS)
+   - **Use Case**: Production applications needing high availability and traffic distribution
+   - **How it works**: Cloud provider creates an external load balancer (ALB/NLB) that routes to the service
+   - **Benefits**: Health checks, SSL termination, automatic failover, traffic distribution
+   - **Example**: A public-facing web application accessible at a stable DNS name
+
+   **LoadBalancer Diagram:**
+   ```
+   ┌──────────────┐
+   │ External User│  (Internet Users)
+   └──────┬───────┘
+          │ http://my-app-lb-123456.us-east-1.elb.amazonaws.com
+          │
+          ▼
+   ┌─────────────────────────────────────────────────────────┐
+   │         AWS Cloud Load Balancer (ALB/NLB)               │
+   │  • Public DNS Name                                       │
+   │  • Health Checks                                         │
+   │  • SSL/TLS Termination                                   │
+   │  • Automatic Traffic Distribution                        │
+   └──────────────────────┬──────────────────────────────────┘
+                          │
+   ┌──────────────────────▼──────────────────────────────────────┐
+   │                  Kubernetes Cluster                         │
+   │                                                             │
+   │  ┌─────────────────┐    ┌─────────────────┐               │
+   │  │  Worker Node 1  │    │  Worker Node 2  │               │
+   │  └────────┬────────┘    └────────┬────────┘               │
+   │           │                      │                         │
+   │           └──────────┬───────────┘                         │
+   │                      ▼                                     │
+   │          ┌───────────────────────┐                         │
+   │          │  LoadBalancer Service │                         │
+   │          │  Type: LoadBalancer   │                         │
+   │          │  Port: 80             │                         │
+   │          └───────────┬───────────┘                         │
+   │                      │                                     │
+   │        ┌─────────────┼─────────────┐                       │
+   │        ▼             ▼             ▼                       │
+   │   ┌────────┐    ┌────────┐    ┌────────┐                 │
+   │   │ Pod 1  │    │ Pod 2  │    │ Pod 3  │                 │
+   │   │ :80    │    │ :80    │    │ :80    │                 │
+   │   └────────┘    └────────┘    └────────┘                 │
+   │                                                             │
+   │  ✅ Production-ready: Managed by AWS, automatic failover    │
+   │  ✅ No manual security group configuration needed           │
+   └─────────────────────────────────────────────────────────────┘
+   ```
+
+**Service Type Comparison:**
+
+| Feature | ClusterIP | NodePort | LoadBalancer |
+|---------|-----------|----------|--------------|
+| **External Access** | ❌ No | ✅ Yes (via Node IP) | ✅ Yes (via LB DNS) |
+| **Use Case** | Internal only | Dev/Testing | Production |
+| **Cost** | Free | Free | 💰 LB charges apply |
+| **Port Range** | Any | 30000-32767 | Any |
+| **DNS Name** | Internal only | No | ✅ Yes |
+| **Health Checks** | No | Manual | ✅ Automatic |
+| **SSL/TLS** | Manual | Manual | ✅ Built-in |
+| **Security Setup** | None | Security Group | Automatic |
 
 ###### NodePort Service Demo:
-- what are the different ports in kubernetes service?
-  1. Target Port: The port on which the application is running inside the pod.
-  2. Port: The port on which the service is exposed inside the cluster. The service listens on this port and forwards traffic to the target port of the pods.
-  3. NodePort: The port on which the service is exposed on each node in the cluster. Worker nodes listen on this port and forward traffic to the service.
+
+**Understanding the Three Port Types in Kubernetes Services:**
+
+When working with Kubernetes services, you'll encounter three different port configurations. Understanding these is crucial:
+
+1. **Target Port** (targetPort)
+   - The port on which your **application is actually running inside the pod**
+   - This is the port your container listens on
+   - Example: If your nginx container listens on port 80, targetPort = 80
+   - Think of it as: "The door to your application inside the container"
+
+2. **Port** (port)
+   - The port on which the **service is exposed inside the cluster**
+   - Other pods in the cluster use this port to connect to your service
+   - The service listens on this port and forwards traffic to the targetPort
+   - Think of it as: "The door to the service from other pods in the cluster"
+
+3. **NodePort** (nodePort)
+   - The port exposed on **every worker node in the cluster**
+   - Used for external access from outside the cluster
+   - Range: 30000-32767 (Kubernetes reserves this range for NodePort services)
+   - All worker nodes listen on this port and forward traffic to the service
+   - Think of it as: "The door from the outside world to your cluster"
+
+**Detailed Port Flow Diagram:**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                         Traffic Flow                                 │
+└──────────────────────────────────────────────────────────────────────┘
+
+   External User                    Worker Node                    Pod
+   (Your Browser)                   (EC2 Instance)                 (Container)
+   
+   http://54.1.1.100:30080     
+        │                      
+        │  1. Request arrives
+        │  at Worker Node IP
+        │  on NodePort 30080
+        │                      
+        └────────────────────▶ NodePort: 30080
+                               (Listens on ALL nodes)
+                                      │
+                                      │  2. Forwards to Service
+                                      │  on cluster port 80
+                                      │
+                                      ▼
+                               Service Port: 80
+                               (ClusterIP: 10.100.200.50)
+                               Load balances traffic
+                                      │
+                                      │  3. Routes to Pod
+                                      │  on targetPort 80
+                                      │
+                                      ▼
+                                               ┌─────────────────┐
+                                               │   Pod Container │
+                                               │                 │
+                                               │  TargetPort: 80 │
+                                               │  (nginx runs    │
+                                               │   on port 80)   │
+                                               └─────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  Port Configuration Summary:                                         │
+│  • NodePort: 30080 (external access point)                           │
+│  • Port: 80 (service endpoint inside cluster)                        │
+│  • TargetPort: 80 (application port in container)                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+   kubectl expose pod my-first-pod \
+     --type=NodePort \               ← Creates NodePort service type
+     --name=my-first-service \       ← Service name
+     --port=80 \                     ← Port (service port in cluster)
+     --target-port=80                ← TargetPort (app port in container)
+                                     ← NodePort auto-assigned (30000-32767)
+```
+
+**Traffic Flow Visualization:**
+```
+External User (Browser)
+        ↓
+http://NodeIP:30080 (NodePort - port on worker node)
+        ↓
+Service (listening on port 80 inside cluster)
+        ↓
+Pod Container (application running on targetPort 80)
+```
+
+**Step-by-Step Demo:**
+
 - After creating the pod, run this command to create a NodePort service:
 ```kubectl expose pod my-first-pod --type=NodePort --name=my-first-service --port=80 --target-port=80
 ```
-- This command creates a NodePort service named "my-first-service" that exposes port 80 and forwards traffic to port 80 of the "my-first-pod" pod.
+- This command creates a NodePort service named "my-first-service" that:
+  - Exposes port 80 for internal cluster access (--port=80)
+  - Forwards traffic to port 80 of the "my-first-pod" pod (--target-port=80)
+  - Automatically assigns a NodePort in the 30000-32767 range for external access
 - To get the details of the service, run:
 ```kubectl get service my-first-service```
 - This command displays the details of the service, including the NodePort assigned to it.
@@ -245,6 +617,72 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 ```http://54.210.123.45:30080```
 - To get the nodeport of the service, run:
 ```kubectl get service my-first-service -o jsonpath='{.spec.ports[0].nodePort}'```
+
+**⚠️ IMPORTANT: Security Group Configuration for NodePort Access**
+
+Before you can access your application from your local browser, you **MUST** open the NodePort in the worker node security group:
+
+**Why is this required?**
+- Kubernetes opens the NodePort on all worker nodes (e.g., 30080)
+- However, AWS Security Groups act as a firewall and **block all inbound traffic by default**
+- Without adding an inbound rule, your browser requests will timeout
+
+**Steps to Configure Security Group:**
+
+1. **Find the Security Group:**
+   - Go to **EC2 Console** → **Security Groups**
+   - Look for the security group attached to your EKS worker nodes
+   - Usually named: `eks-cluster-name-node-*` or contains "remote access"
+
+2. **Add Inbound Rule:**
+   ```
+   ┌────────────────────────────────────────────────────────┐
+   │  Security Group Inbound Rule Configuration             │
+   ├────────────────────────────────────────────────────────┤
+   │  Type:        Custom TCP                               │
+   │  Port Range:  30080  (or your NodePort)                │
+   │  Source:      Choose one:                              │
+   │               • My IP (Recommended for testing)        │
+   │               • 0.0.0.0/0 (Public access - use with    │
+   │                            caution!)                   │
+   │  Description: NodePort for my-first-service            │
+   └────────────────────────────────────────────────────────┘
+   ```
+
+3. **Access Your Application:**
+   - After adding the rule, you can access your app at:
+   - `http://<WorkerNodePublicIP>:<NodePort>`
+   - Example: `http://54.210.123.45:30080`
+
+**Security Best Practices:**
+- ✅ **For Testing**: Use "My IP" to restrict access to only your IP address
+- ✅ **For Production**: Use **LoadBalancer** service type instead (more secure, managed by AWS)
+- ⚠️ **Avoid**: Opening `0.0.0.0/0` unless you need public internet access
+- ⚠️ **Never**: Expose sensitive services (databases, admin panels) via NodePort
+
+**Traffic Flow with Security Group:**
+```
+┌──────────────┐
+│ Your Browser │  http://54.210.123.45:30080
+└──────┬───────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  AWS Security Group (Firewall)              │
+│  ✅ Port 30080 allowed from your IP         │
+│  ❌ All other ports blocked                 │  
+└──────┬──────────────────────────────────────┘
+       │  Traffic allowed through
+       ▼
+┌─────────────────────────────┐
+│  Worker Node (EC2 Instance) │
+│  NodePort: 30080            │
+└─────────────────────────────┘
+
+Without security group rule: ❌ Connection timeout
+With security group rule: ✅ Application accessible
+```
+
 - Make sure that the node security group allows inbound traffic on the nodeport from your IP address.
 - The above information can also be found on the console under the services section of the EKS cluster.
 - You are able to access the application on the other node as well since the service is exposed on all nodes in the cluster.
@@ -255,6 +693,22 @@ kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife
 - To get the yaml configuration of the pod, run:
 ```kubectl get pod my-first-pod -o yaml```
 - This provides the complete configuration of the pod in yaml format.
+
+**Important Concepts About Services:**
+
+1. **Services work across all nodes**: Even though your pod might be running on Node 1, you can access it using the IP of Node 2 or Node 3. The NodePort service listens on ALL worker nodes.
+
+2. **Labels and Selectors**: Services don't target pods by name. They use labels and selectors:
+   ```
+   Service (selector: app=myapp) → finds all Pods (label: app=myapp)
+   ```
+   This means any pod with the matching label will receive traffic from the service.
+
+3. **Automatic Load Balancing**: If you have multiple pods with the same labels, the service automatically distributes traffic across all of them.
+
+4. **Service Discovery**: Pods can find services using DNS names. For example, a pod can connect to `my-first-service` using just the service name instead of an IP address.
+
+5. **Security Group Requirements**: Make sure your worker node security group allows inbound traffic on the NodePort range (30000-32767) from your IP address or the internet, depending on your access requirements.
 
 #### ReplicaSets:
 - A ReplicaSet is a Kubernetes resource that ensures a specified number of pod replicas are running at any given time.
@@ -2112,3 +2566,5 @@ So even though your IAM policy allows deleting records (ChangeResourceRecordSets
 - In this demo we will create a kubernetes service of type loadbalancer with external dns to automatically create a dns record in route53.
 - In this case external dns will create a dns record for the service in route53.
 - See section 08-08 for more details.
+- Kubernetes service of type load balancer creates a classic load balancer by default and the external dns will create a dns record pointing to the classic load balancer.
+- 
