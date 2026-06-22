@@ -1,4 +1,5 @@
 ### AWS EKS - Elastic Kubernetes Service (Udemy Course)
+
 What is Kubernetes?
 Kubernetes is an open-source container orchestration platform designed to automate the deployment, scaling, and management of containerized applications. It provides a framework for running distributed systems resiliently, allowing developers to manage microservices architectures with ease. Kubernetes abstracts away the underlying infrastructure, enabling developers to focus on building applications without worrying about the complexities of the environment in which they run.
 Containers are:
@@ -108,58 +109,74 @@ Resource quotas:
           cpu: "2"
           memory: "2Gi"
 Its a huge pain to upgrade the kubernetes as this updates the api versions and deprecates old ones. Always check the api versions before applying a manifest file. This can cause a lot of issues if you are not careful.
+
 #### Installing the 3 clis needed to work with EKS
+
 1. AWS CLI
-    - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    - To install AWS CLI on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
-      ```
-      choco install awscli
-      ```
-      - To check if AWS CLI is installed correctly, run:
-      ```
-      aws --version
-      ```
+   - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+   - To install AWS CLI on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
+
+     ```
+     choco install awscli
+     ```
+
+     - To check if AWS CLI is installed correctly, run:
+
+     ```
+     aws --version
+     ```
 2. kubectl
-    - https://kubernetes.io/docs/tasks/tools/install-kubectl/
-    - To install kubectl on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
-      ```
-      choco install kubernetes-cli
-      ```
-      - To check if kubectl is installed correctly, run:
-      ```
-      kubectl version --client
-      ```
+   - https://kubernetes.io/docs/tasks/tools/install-kubectl/
+   - To install kubectl on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
+
+     ```
+     choco install kubernetes-cli
+     ```
+
+     - To check if kubectl is installed correctly, run:
+
+     ```
+     kubectl version --client
+     ```
 3. eksctl
-    - https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html  
-    - To install eksctl on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
-      ```
-      choco install eksctl
-      ```
-    - To check if eksctl is installed correctly, run:
-      ```
-      eksctl version
-      ```
+   - https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html
+   - To install eksctl on Windows using Chocolatey, run the following command in an elevated PowerShell or Command Prompt:
+     ```
+     choco install eksctl
+     ```
+   - To check if eksctl is installed correctly, run:
+     ```
+     eksctl version
+     ```
+
 #### EKS Cluster Introduction:
+
 - EKS is a managed Kubernetes service provided by AWS that simplifies the process of deploying, managing, and scaling containerized applications using Kubernetes.
 - Eks Cluster has 4 main components:
   1. Control Plane
   2. Worker Nodes and node groups
-  3. Fargate profiles 
+  3. Fargate profiles
   4. VPC
+
 ##### EKS Control Plane:
+
 - The control plane is responsible for managing the Kubernetes cluster and consists of components such as the kube-apiserver, etcd (the cluster's data store), kube-scheduler, and kube-controller-manager.
 - It runs a single-tenant control plane for each EKS cluster and is not shared with other AWS accounts or across clusters. One control plane → One cluster (dedicated and isolated)
 - it consist of atleast 2 api server nodes and 3 etcd nodes that are distributed across 3 Availability Zones (AZs) for high availability.
-- EKS automatically detects and replaces unhealthy control plane instances restarting them across the azs within the region as needed. 
+- EKS automatically detects and replaces unhealthy control plane instances restarting them across the azs within the region as needed.
 - Its a managed service by AWS, meaning AWS takes care of the availability and scalability of the control plane.
 - In regular kubernetes setup, you would have to manage the control plane yourself.
+
 ##### EKS Worker Nodes and Node Groups:
-- Worker nodes are the EC2 instances that run your containerized applications. 
+
+- Worker nodes are the EC2 instances that run your containerized applications.
 - A node group is one or more worker nodes that share the same configuration, such as instance type, AMI, and scaling policies.
 - You can create and manage node groups using eksctl or the AWS Management Console.
 - The worker nodes run in our AWS account and connect to our **clusters control plane using the cluster API server endpoint**.
 - The ec2 instances are deployed  in a autoscaling group across multiple availability zones for high availability.
+
 ##### Fargate Profiles:
+
 - Fargate profiles allow you to run Kubernetes pods on AWS Fargate, which is a serverless compute engine for containers.
 - Instead of EC2 instances, we run our application workloads on serverless Fargate profiles.
 - Fargate is a technology that provides on-demand, right-sized compute capacity for containers without the need to manage the underlying infrastructure.
@@ -167,10 +184,12 @@ Its a huge pain to upgrade the kubernetes as this updates the api versions and d
 - Each pod running on fargate has its own isolation boundary and does not share the underlying kernel, CPU resources, memory, or elastic network interface with other pods.
 - AWS specifically built fargate controllers that recognize the pods belonging to fargate and schedules them on fargate profiles
 - **Fargate profiles only run on private subnets within the VPC.**
+
 ##### VPC:
+
 - With AWS VPC we follow secure networking standards which will allow us to run production workloads on EKS.
 - EKS uses AWS vpc network policies to restrict traffic between control plane and components within a single cluster
-- Control plane components for EKS cluster cannot view view or receive communication from another cluster or other AWS accounts, except as authorized with kubernetes role-based access control (RBAC) and IAM policies.
+- Control plane components for EKS cluster cannot view or receive communication from another cluster or other AWS accounts, except as authorized with kubernetes role-based access control (RBAC) and IAM policies.
 - This secure and highly available configuration makes EKS reliable anbd recommended for production workloads
 
 ### How does EKS work?
@@ -178,95 +197,171 @@ Its a huge pain to upgrade the kubernetes as this updates the api versions and d
 ![EKS Architecture](../Kubernetes/screenshots/pic4.png)
 
 #### Create your first EKS Cluster:
+
 - To create an EKS cluster using eksctl, run the following command:
+
 ```
   eksctl create cluster --name=eksdemo1 --region=us-east-1 --zones=us-east-1a,us-east-1b --without-nodegroup
 ```
+
 - This command creates an EKS cluster named "eksdemo1" in the "us-east-1" region, spanning the specified availability zones, without creating a node group.
 - To verify that the cluster has been created, run:
-```aws eks --region us-east-1 list-clusters```
+  ``aws eks --region us-east-1 list-clusters``
 - This command lists all the EKS clusters in the specified region.
 - If you dont specify the region, it will use the default region set in your AWS CLI configuration.
 - This takes about 15-20 minutes to create the cluster.
 - This command also creates a VPC with public and private subnets, internet gateway, NAT gateway, and route tables.
 - Once the cluster is created, eksctl automatically configures your kubectl context to use the new cluster.
 - To check the kubectl context, run:
-```kubectl config get-contexts```
+  ``kubectl config get-contexts``
 - This command lists all the kubectl contexts and highlights the current context.
 - The kubernetes context contains information about the cluster, user, and namespace.
 - To view the details of the current context, run:
-```kubectl config view --minify```  
+  ``kubectl config view --minify``
 - To view the clusters created in EKS, run:
-```eksctl get cluster```
+  ``eksctl get cluster``
+
 ##### Create the IAM OIDC Provider:
+
 - To enable and use AWS roles for kubernetes service accounts on our EKS cluster we must create and associate OIOC provider with our EKS cluster.
 
 **Why is the IAM OIDC Provider needed?**
+
 - The IAM OIDC (OpenID Connect) provider enables **IAM Roles for Service Accounts (IRSA)**, which allows Kubernetes pods to securely access AWS services.
 - **Benefits of IRSA:**
+
   1. **Fine-grained permissions**: Each pod can have its own IAM role with specific permissions, rather than all pods sharing the same EC2 instance profile
   2. **Enhanced security**: No need to hardcode AWS credentials in application code, ConfigMaps, or Secrets
   3. **Principle of least privilege**: Different applications can have different AWS permissions based on their needs
   4. **Audit trail**: AWS CloudTrail can track which pod assumed which IAM role for better compliance and monitoring
 - **How it works:**
+
   - Kubernetes service accounts are annotated with an IAM role ARN
   - When a pod uses that service account, it can assume the associated IAM role
   - The OIDC provider acts as a trusted identity provider that AWS IAM verifies
   - This eliminates the need for instance profiles or storing credentials in pods
-
 - To create an IAM OIDC provider for our EKS cluster, run the following command:
-```eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster eksdemo1 --approve```
+  ``eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster eksdemo1 --approve``
 - This command associates an IAM OIDC provider with the specified EKS cluster in the given region.
 - To verify that the OIDC provider has been created, run:
-```aws iam list-open-id-connect-providers```
+  ``aws iam list-open-id-connect-providers``
 - This command lists all the IAM OIDC providers in your AWS account.
-- **This command is now redundant as eksctl automatically creates the OIDC provider when creating the EKS cluster.** 
+- **This command is now redundant as eksctl automatically creates the OIDC provider when creating the EKS cluster.**
+
 #### Create EKS Managed Nodes and IAM OIDC Provider:
+
 ##### Create EKS Managed Node Group:
+
 - To create an EKS managed node group, run the following command:
-```eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=shared-key-pair --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access 
+
+```eksctl
+
 ```
+
 - This command creates a managed node group named "eksdemo1-ng-public1" in the "eksdemo1" cluster, with t3.medium instance type, 2 initial nodes, minimum 2 nodes, maximum 4 nodes, 20 GB volume size, SSH access using the specified public key, and various IAM permissions for the node group.
-      --asg-access                  enable IAM policy for cluster-autoscaler 
-      --external-dns-access         enable IAM policy for external-dns
-      --full-ecr-access             enable full access to ECR
-      --appmesh-access              enable full access to AppMesh
-      --appmesh-preview-access      enable full access to AppMesh Preview
-      --alb-ingress-access          enable full access for alb-ingress-controller
-      --install-neuron-plugin       install Neuron plugin for Inferentia and Trainium nodes (default true)
-      --install-nvidia-plugin       install Nvidia plugin for GPU nodes (default true)
-      --nodegroup-parallelism int   Number of self-managed or managed nodegroups to create in parallel (default 8)
+  --asg-access                  enable IAM policy for cluster-autoscaler
+  --external-dns-access         enable IAM policy for external-dns
+  --full-ecr-access             enable full access to ECR
+  --appmesh-access              enable full access to AppMesh
+  --appmesh-preview-access      enable full access to AppMesh Preview
+  --alb-ingress-access          enable full access for alb-ingress-controller
+  --install-neuron-plugin       install Neuron plugin for Inferentia and Trainium nodes (default true)
+  --install-nvidia-plugin       install Nvidia plugin for GPU nodes (default true)
+  --nodegroup-parallelism int   Number of self-managed or managed nodegroups to create in parallel (default 8)
 - All the above permissions can be seen in the IAM role created for the EC2 instances in the node group.
 - These permissions allow the worker nodes to interact with other AWS services as needed.
 - These can also be added later to the node group IAM role if needed.
 - managed node groups are automatically updated and maintained by AWS, making it easier to manage the worker nodes in your EKS cluster.
-- The security group created for the node group allows inbound traffic on port 22 (SSH) from anywhere on ipv4 and ipv6. 
+- The security group created for the node group allows inbound traffic on port 22 (SSH) from anywhere on ipv4 and ipv6.
 - Its called remote access security group.
 - To verify that the node group has been created, run:
-```eksctl get nodegroup --cluster=eksdemo1 --region=us-east-1```
+  ``eksctl get nodegroup --cluster=eksdemo1 --region=us-east-1``
 - This command lists all the node groups in the specified EKS cluster and region.
 - On the console you can find the nodegroup under the EKS cluster compute section
 - To view the EC2 instances created for the node group, go to the EC2 console and check for instances with the tag "eks:cluster-name" set to "eksdemo1" and "eks:nodegroup-name" set to "eksdemo1-ng-public1".
 - To check the kubernetes nodes, run:
-```kubectl get nodes```
+  ``kubectl get nodes``
+
 #### Delete EKS Cluster and Node Group:
+
 - To delete the EKS managed node group, run the following command:
-```eksctl delete nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1```
+  ``eksctl delete nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1``
 - This command deletes the specified node group from the given EKS cluster and region. This should be done before deleting the cluster.
 - To delete the EKS cluster, run the following command:
-```eksctl delete cluster --name=eksdemo1 --region=us-east-1```
+  ``eksctl delete cluster --name=eksdemo1 --region=us-east-1``
+
 ### Docker Fundamentals for EKS:
+
 - Docker is a platform that allows developers to easily create, deploy, and run applications in containers
-### Kubernetes Fundamentals: 
+
+### Kubernetes Fundamentals:
+
 - The container runtime is found in both the control plane and worker nodes.
 - In eks we have the eks controller manager and fargate controller that manage the worker nodes and fargate profiles respectively.
 - The worker nodes still have kubelet, kube-proxy and container runtime installed on them.
-- eks lets on focus on deploying and managing applications rather than managing the underlying infrastructure.
+- eks lets us focus on deploying and managing applications rather than managing the underlying infrastructure.
+
 #### Imperative vs Declarative:
+
 - Imperative approach involves giving specific commands to achieve a desired state.
 - Declarative approach involves defining the desired state of the system and letting the system figure out how to achieve that state.
 - Kubernetes uses a declarative approach, where we define the desired state of our applications and the system works to maintain that state.
-#### Kubernetes pods: 
+
+#### Kubernetes access and authentication:
+
+##### Kubernetes Access Entry
+
+Access to a Kubernetes cluster is managed through a combination of authentication (who you are) and authorization (what you can do). The main entry point for users and automation is the Kubernetes API server, which is typically accessed via the `kubectl` CLI or programmatically via API clients. Access is controlled by:
+
+- **Kubeconfig file**: Stores cluster endpoint, user credentials, and context. Each user or automation process uses a kubeconfig to authenticate to the cluster.
+- **Authentication methods**: Kubernetes supports certificates, bearer tokens, OpenID Connect (OIDC), and cloud provider IAM integrations (e.g., AWS IAM for EKS).
+
+##### RBAC (Role-Based Access Control)
+
+RBAC is the standard mechanism for controlling what users and service accounts can do within a Kubernetes cluster. It works by defining roles and binding them to users or groups.
+
+- **Role**: Defines a set of permissions (verbs like get, list, create, delete) on resources (pods, services, etc.) within a specific namespace.
+- **ClusterRole**: Like a Role, but applies cluster-wide or to non-namespaced resources (e.g., nodes, persistent volumes).
+- **RoleBinding**: Grants the permissions defined in a Role to a user, group, or service account within a namespace.
+- **ClusterRoleBinding**: Grants the permissions defined in a ClusterRole to a user, group, or service account across the entire cluster.
+
+**Example:**
+
+1. **ClusterRole**: Defines permissions (e.g., can list all pods in all namespaces).
+2. **ClusterRoleBinding**: Binds that ClusterRole to a user or group, granting them those permissions cluster-wide.
+3. **Role**: Defines permissions within a single namespace (e.g., can create deployments in the 'dev' namespace).
+4. **RoleBinding**: Binds a Role to a user or service account within a namespace.
+
+##### IAM Roles and Kubernetes (EKS Example)
+
+On managed Kubernetes platforms like AWS EKS, IAM roles can be mapped to Kubernetes users or service accounts for authentication and fine-grained access control:
+
+- **IAM Role for User Access**: IAM users/roles can be mapped to Kubernetes users/groups in the `aws-auth` ConfigMap. This allows AWS IAM identities to authenticate to the cluster and be authorized via RBAC.
+- **IAM Roles for Service Accounts (IRSA)**: Service accounts in Kubernetes can be annotated with IAM roles, allowing pods to assume AWS permissions securely (see OIDC provider section above). This is used for granting pods access to AWS services without storing credentials in the pod.
+
+##### How RBAC, ClusterRoles, and ClusterRoleBindings Work Together
+
+1. **Define a ClusterRole** with the required permissions (e.g., read-only access to all resources).
+2. **Create a ClusterRoleBinding** to assign that ClusterRole to a user, group, or service account (can be an IAM identity mapped via EKS).
+3. When the user authenticates (via kubeconfig, IAM, or OIDC), Kubernetes checks their identity and applies the RBAC rules to determine what actions they can perform.
+
+**Summary Table:**
+
+| Resource           | Scope     | Purpose                                                        |
+| ------------------ | --------- | -------------------------------------------------------------- |
+| Role               | Namespace | Permissions within a namespace                                 |
+| RoleBinding        | Namespace | Assigns Role to user/group/service account in a namespace      |
+| ClusterRole        | Cluster   | Permissions cluster-wide or for non-namespaced resources       |
+| ClusterRoleBinding | Cluster   | Assigns ClusterRole to user/group/service account cluster-wide |
+
+**Best Practice:**
+
+- Use least privilege: Only grant the permissions required for each user or service.
+- Use service accounts with IRSA for pod-level AWS access in EKS.
+- Regularly audit RBAC and IAM mappings for security.
+
+#### Kubernetes pods:
+
 - Kubernestes goal is to deploy our applications in the form of containers on worker nodes in a k8s cluster.
 - A pod is the smallest deployable unit in kubernetes
 - The containers are not deployed directly on the worker nodes, instead they are deployed inside pods.
@@ -283,8 +378,11 @@ Its a huge pain to upgrade the kubernetes as this updates the api versions and d
 - They also help push data from the main container to external systems.
 - They can also server as proxies for the main container.
 - when app is growing scale the number of pods rather than increasing the number of containers in a pod.
+
 ##### K8s pods demo:
+
 ###### Kubeconfig file:
+
 The kubeconfig file is used to configure access to Kubernetes clusters. It contains:
 Authentication & Authorization:
 Cluster API server endpoints (URLs)
@@ -300,9 +398,11 @@ Switch between multiple Kubernetes clusters (dev, staging, prod)
 Use different credentials for different clusters
 Set default namespaces per context
 Allow kubectl to know which cluster to send commands to
+
 - Each team member can have their own kubeconfig file with access to specific clusters.
 - The kubeconfig file is typically located at ~/.kube/config on Linux and macOS,
 - to generate the kubeconfig file for an EKS cluster, you can use the AWS CLI command:
+
 ```bash
 aws eks update-kubeconfig --region region-code --name cluster-name
 ```
@@ -317,55 +417,77 @@ aws eks update-kubeconfig --region us-east-1 --name int-preproduction-use1-share
 ```
 
 ###### Creating a namespace using kubectl:
+
 - Run this command to create a new namespace
-```kubectl create namespace hway```
+  ``kubectl create namespace hway``
 - To verify the namespace has been created, run:
-```kubectl get namespaces```
+  ``kubectl get namespaces``
 
 ###### Creating a pod using kubectl:
 
 - Run this command to check the nodes
-```kubectl get nodes```
+  ``kubectl get nodes``
 - Run this command to create a new pod
+
 ```
 kubectl run my-first-pod --image njibrigthain100/brigthain:cognilife 
 ```
+
 - You can use the describe pod command to get detailed information about the pod
-```kubectl describe pod my-first-pod```
-- This information can be found on the console under the pods section of the EKS cluster. 
+  ``kubectl describe pod my-first-pod``
+- This information can be found on the console under the pods section of the EKS cluster.
 - Go to the eks cluster and under resource select  pods and select the namespace in which the pod is created, by default its created in the default namespace.
 - To check the logs of the pod, run:
-```kubectl logs my-first-pod```
+  ``kubectl logs my-first-pod``
 - To delete the pod, run:
-```kubectl delete pod my-first-pod```
+  ``kubectl delete pod my-first-pod``
 
 ##### K8s service demo:
 
 **What is a Kubernetes Service?**
+
 - A Kubernetes Service is a stable network endpoint that provides access to a set of pods.
 - It acts as an internal load balancer and service discovery mechanism for your applications.
 
 **Why do we need Kubernetes Services?**
+
 - **Pods are ephemeral**: Pods can be created, destroyed, and replaced at any time (crashes, scaling, updates)
 - **Dynamic IP addresses**: Each time a pod is recreated, it gets a new IP address
 - **Problem**: How do other applications reliably connect to your pods when IPs keep changing?
 - **Solution**: Services provide a stable DNS name and IP address that remains constant, even as pods come and go behind the scenes
 
 **How Services Work:**
+
 - Services use **labels and selectors** to identify which pods they route traffic to
-- When you create a service, it continuously monitors pods with matching labels
-- The service automatically updates its list of healthy pod endpoints
-- Traffic sent to the service is load-balanced across all matching pods
+- When you create a Service, the **EndpointSlice controller** continuously watches for pods with matching labels and that are **Ready** (passing their readiness probe)
+- It maintains an up-to-date list of healthy pod IPs called **endpoints** (stored in **EndpointSlice** objects)
+- **`kube-proxy`** (running on every node) watches those EndpointSlices and programs the node's kernel networking (**iptables** rules, or **IPVS** in larger clusters) to load-balance traffic across the endpoints
+- **Important**: a Service is a *virtual* construct — there is no single "service process" sitting in the traffic path. The Service object is just an API record (a stable ClusterIP + the selector). The real packet steering is done by kube-proxy's rules in each node's kernel.
+
+**Who does the actual load balancing?**
+
+- **`kube-proxy`** does. It picks one Pod from the endpoint list (default = random / round-robin) and rewrites (DNATs) the packet to that Pod's IP.
+- The selection is **per-connection at L4 (TCP/UDP)** — it has no awareness of HTTP paths/headers (that's what Ingress is for).
+- The chosen Pod may live on the **same node or a different node** (reached over the cluster pod network/CNI).
 
 **Example Scenario:**
+
 ```
-📱 User Request → 🔄 Service (stable endpoint) → 🎯 Pod 1, Pod 2, Pod 3 (dynamic)
+📱 User Request → 🔄 Service (stable ClusterIP) → kube-proxy rules → 🎯 Pod 1, Pod 2, Pod 3 (dynamic)
 ```
-Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffic to the healthy pods.
+
+Even if Pod 1 dies and Pod 4 is created, the EndpointSlice controller drops Pod 1 and adds Pod 4, kube-proxy updates its rules, and traffic automatically flows only to the healthy pods.
 
 **The Three Main Types of Services:**
 
+> **Key idea — the `type` only controls the "front door" (how clients reach the Service). It never changes how Pods are selected; that's always kube-proxy + the EndpointSlice list.** The types are *additive*: every Service has a ClusterIP; NodePort adds a node port on top; LoadBalancer adds a cloud LB on top of the NodePort.
+>
+> - **ClusterIP** = ClusterIP + kube-proxy rules (internal only)
+> - **NodePort** = *everything ClusterIP does* + opens a port on every node
+> - **LoadBalancer** = *everything NodePort does* + provisions a cloud LB that forwards to that NodePort
+
 1. **ClusterIP (Default)**
+
    - **Purpose**: Internal communication within the cluster only
    - **Access**: Only accessible from inside the cluster
    - **Use Case**: Backend services, databases, internal APIs that don't need external access
@@ -373,6 +495,7 @@ Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffi
    - **IP**: Gets a virtual IP that's only routable within the cluster
 
    **ClusterIP Diagram:**
+
    ```
    ┌─────────────────────────────────────────────────────────────┐
    │                    Kubernetes Cluster                       │
@@ -397,8 +520,8 @@ Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffi
    │   ❌ External users CANNOT access this service              │
    └─────────────────────────────────────────────────────────────┘
    ```
-
 2. **NodePort**
+
    - **Purpose**: Expose your application to external traffic via worker node IPs
    - **Access**: Accessible from outside the cluster using `<NodeIP>:<NodePort>`
    - **Use Case**: Dev/test environments, quick external access without a load balancer
@@ -408,104 +531,149 @@ Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffi
    - **Note**: You cannot specify the nodeport when creating the service imperatively with kubectl; it's auto-assigned
 
    **NodePort Diagram:**
+
    ```
    ┌──────────────┐
    │ External User│  (Your Browser)
    │  Internet    │
    └──────┬───────┘
-          │ http://NodeIP:30080
-          │
-   ┌──────▼───────────────────────────────────────────────────────┐
+          │ http://NodeIP:30080  (hits the port on ANY one node)
+          ▼
+   ┌───────────────────────────────────────────────────────────────┐
    │                    Kubernetes Cluster                         │
    │                                                               │
    │  ┌─────────────────┐    ┌─────────────────┐                 │
-   │  │  Worker Node 1  │    │  Worker Node 2  │  (All nodes     │
-   │  │  IP: 54.1.1.100 │    │  IP: 54.1.1.101 │   listen on     │
-   │  │  Port: 30080 ✅ │    │  Port: 30080 ✅ │   same port)    │
+   │  │  Worker Node 1  │    │  Worker Node 2  │  Every node     │
+   │  │  IP: 54.1.1.100 │    │  IP: 54.1.1.101 │  opens port     │
+   │  │  Port: 30080 ✅ │    │  Port: 30080 ✅ │  30080 and runs │
+   │  │  (kube-proxy)   │    │  (kube-proxy)   │  kube-proxy     │
    │  └────────┬────────┘    └────────┬────────┘                 │
    │           │                      │                           │
-   │           └──────────┬───────────┘                           │
-   │                      ▼                                       │
-   │            ┌─────────────────────┐                           │
-   │            │  NodePort Service   │                           │
-   │            │  ClusterIP:80       │                           │
-   │            │  NodePort:30080     │                           │
-   │            └──────────┬──────────┘                           │
-   │                       │                                       │
-   │         ┌─────────────┼─────────────┐                        │
-   │         ▼             ▼             ▼                        │
-   │    ┌────────┐    ┌────────┐    ┌────────┐                  │
-   │    │ Pod 1  │    │ Pod 2  │    │ Pod 3  │                  │
-   │    │ :80    │    │ :80    │    │ :80    │                  │
-   │    └────────┘    └────────┘    └────────┘                  │
+   │           ▼                      ▼                           │
+   │  ┌──────────────────────────────────────────────────┐       │
+   │  │  NodePort Service  (virtual — not a real hop)      │       │
+   │  │  ClusterIP:80  +  NodePort:30080                   │       │
+   │  │  kube-proxy rules on each node load-balance to the │       │
+   │  │  Pods (the chosen Pod may be on a different node)   │       │
+   │  └──────┬───────────────┬───────────────┬─────────────┘       │
+   │         ▼               ▼               ▼                     │
+   │    ┌────────┐      ┌────────┐      ┌────────┐                │
+   │    │ Pod 1  │      │ Pod 2  │      │ Pod 3  │                │
+   │    │ :80    │      │ :80    │      │ :80    │                │
+   │    └────────┘      └────────┘      └────────┘                │
    │                                                               │
+   │  Flow: User → NodeIP:30080 → kube-proxy → Service → a Pod      │
    │  ⚠️  Security Group must allow inbound traffic on port 30080  │
    └───────────────────────────────────────────────────────────────┘
    ```
-
 3. **LoadBalancer**
+
    - **Purpose**: Production-grade external access using a cloud load balancer
    - **Access**: Accessible via a dedicated external load balancer (ALB/NLB in AWS)
    - **Use Case**: Production applications needing high availability and traffic distribution
-   - **How it works**: Cloud provider creates an external load balancer (ALB/NLB) that routes to the service
+   - **How it works**: Creating a `type: LoadBalancer` Service is what **provisions** the external cloud load balancer. The cloud LB never targets the ClusterIP (it's internal-only and not routable from outside) \u2014 it targets the nodes or the pods directly, depending on the mode (see below).
    - **Benefits**: Health checks, SSL termination, automatic failover, traffic distribution
    - **Example**: A public-facing web application accessible at a stable DNS name
 
-   **LoadBalancer Diagram:**
+   **Two targeting modes (AWS):**
+
+   - **Instance mode** (`target-type: instance`, the default for in-tree/classic services): the LB registers the **worker nodes** as targets and forwards to the auto-assigned **NodePort**. kube-proxy then load-balances to a Pod (possibly on another node).
+     - Flow: `Client \u2192 Cloud LB \u2192 NodeIP:NodePort \u2192 kube-proxy \u2192 Pod`
+     - In the LB target group you'll see **node/instance IDs** with a port in the **30000\u201332767** range.
+   - **IP mode** (`target-type: ip`, common on EKS with the **AWS Load Balancer Controller** + **VPC CNI**): the LB registers **Pod IPs directly** as targets, bypassing the NodePort *and* kube-proxy.\n     - Flow: `Client \u2192 Cloud LB \u2192 Pod IP:containerPort` (e.g. `10.4.4.42:3000`)\n     - In the target group you'll see **Pod IPs** with the **container/app port** (not a 3xxxx NodePort).\n     - Benefits: one less hop, lower latency, no double load-balancing, and the real **client source IP** is preserved.\n\n   **How each mode handles a Pod dying:**\n\n   - **Instance mode**: the LB targets are the nodes, so a Pod dying doesn't change the target list at all \u2014 kube-proxy just stops routing to the dead Pod and picks another. The LB never even knows. Very resilient to Pod churn with zero tuning.\n   - **IP mode**: the AWS Load Balancer Controller watches EndpointSlices and **deregisters** the dead Pod IP via the ELB API (entering `draining` for the **deregistration delay**, default 300s), then **registers** the replacement Pod's IP once it's Ready and health-checked. Because this goes through the AWS API it is **not instant**, so without safeguards you can get brief **timeouts/502s** during Pod churn or rolling deployments.\n\n   **Avoiding timeouts in IP mode** (recommended for production EKS):\n\n   - **Pod readiness gates** (`elbv2.k8s.aws/pod-readiness-gate-inject: enabled` on the namespace): old Pods aren't terminated until the new Pods are actually **registered and healthy in the LB**, eliminating the deployment-time gap.\n   - **`preStop` hook sleep + adequate `terminationGracePeriodSeconds`**: the dying Pod keeps serving in-flight requests through the deregistration window instead of dropping connections.\n   - Optionally tune the **deregistration delay** down for short-lived connections.\n\n   > **Which mode mitigates timeouts better?** Instance mode is more forgiving of random Pod death out-of-the-box (kube-proxy absorbs churn). IP mode gives lower latency and the real client IP, and \u2014 *with readiness gates + a `preStop` drain* \u2014 actually handles the most common timeout source (rolling deployments) better. The mode alone doesn't fix timeouts; **graceful shutdown + readiness gates do.**\n\n   **LoadBalancer Diagram:**
+
+   _Instance mode (default) \u2014 LB targets the nodes' NodePort:_
+
    ```
    ┌──────────────┐
    │ External User│  (Internet Users)
    └──────┬───────┘
           │ http://my-app-lb-123456.us-east-1.elb.amazonaws.com
-          │
           ▼
    ┌─────────────────────────────────────────────────────────┐
    │         AWS Cloud Load Balancer (ALB/NLB)               │
    │  • Public DNS Name                                       │
    │  • Health Checks                                         │
    │  • SSL/TLS Termination                                   │
-   │  • Automatic Traffic Distribution                        │
+   │  • Distributes traffic across the worker nodes           │
    └──────────────────────┬──────────────────────────────────┘
-                          │
+                          │ forwards to the auto-assigned
+                          │ NodePort on the worker nodes
    ┌──────────────────────▼──────────────────────────────────────┐
    │                  Kubernetes Cluster                         │
    │                                                             │
    │  ┌─────────────────┐    ┌─────────────────┐               │
    │  │  Worker Node 1  │    │  Worker Node 2  │               │
+   │  │  NodePort ✅    │    │  NodePort ✅    │               │
+   │  │  (kube-proxy)   │    │  (kube-proxy)   │               │
    │  └────────┬────────┘    └────────┬────────┘               │
    │           │                      │                         │
-   │           └──────────┬───────────┘                         │
-   │                      ▼                                     │
-   │          ┌───────────────────────┐                         │
-   │          │  LoadBalancer Service │                         │
-   │          │  Type: LoadBalancer   │                         │
-   │          │  Port: 80             │                         │
-   │          └───────────┬───────────┘                         │
-   │                      │                                     │
-   │        ┌─────────────┼─────────────┐                       │
-   │        ▼             ▼             ▼                       │
-   │   ┌────────┐    ┌────────┐    ┌────────┐                 │
-   │   │ Pod 1  │    │ Pod 2  │    │ Pod 3  │                 │
-   │   │ :80    │    │ :80    │    │ :80    │                 │
-   │   └────────┘    └────────┘    └────────┘                 │
+   │           ▼                      ▼                         │
+   │  ┌──────────────────────────────────────────────────┐     │
+   │  │  LoadBalancer Service  (Type: LoadBalancer)        │     │
+   │  │  virtual — ClusterIP:80 + auto NodePort            │     │
+   │  │  Creating this Service is what provisions the AWS  │     │
+   │  │  LB above; kube-proxy load-balances to the Pods    │     │
+   │  └──────┬───────────────┬───────────────┬─────────────┘     │
+   │         ▼               ▼               ▼                   │
+   │    ┌────────┐      ┌────────┐      ┌────────┐              │
+   │    │ Pod 1  │      │ Pod 2  │      │ Pod 3  │              │
+   │    │ :80    │      │ :80    │      │ :80    │              │
+   │    └────────┘      └────────┘      └────────┘              │
    │                                                             │
+   │  Flow: User → AWS LB → NodePort → kube-proxy → Service → Pod │
    │  ✅ Production-ready: Managed by AWS, automatic failover    │
    │  ✅ No manual security group configuration needed           │
    └─────────────────────────────────────────────────────────────┘
    ```
 
+   _IP mode (EKS + AWS LB Controller + VPC CNI) \u2014 LB targets Pod IPs directly:_
+
+   ```
+   ┌──────────────┐
+   │ External User│  (Internet Users)
+   └──────┬───────┘
+          │ http://my-app-lb-123456.us-east-1.elb.amazonaws.com
+          ▼
+   ┌─────────────────────────────────────────────────────────┐
+   │         AWS Cloud Load Balancer (ALB/NLB)               │
+   │  • Targets = Pod IPs (registered by the AWS LB Controller)│
+   │  • Health checks each Pod directly                       │
+   │  • Preserves the real client source IP                   │
+   └──────────────────────┬──────────────────────────────────┘
+                          │ sends traffic DIRECTLY to Pod IPs
+                          │ (bypasses NodePort AND kube-proxy)
+   ┌──────────────────────▼──────────────────────────────────────┐
+   │                  Kubernetes Cluster                         │
+   │                                                             │
+   │   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐  │
+   │   │   Pod 1     │     │   Pod 2     │     │   Pod 3     │  │
+   │   │ 10.4.4.42   │     │ 10.4.5.71   │     │ 10.4.6.18   │  │
+   │   │  :3000      │     │  :3000      │     │  :3000      │  │
+   │   └─────────────┘     └─────────────┘     └─────────────┘  │
+   │                                                             │
+   │  The LoadBalancer Service still exists (ClusterIP +         │
+   │  NodePort), but the AWS LB Controller watches its           │
+   │  EndpointSlice and registers each Pod IP as an LB target.   │
+   │                                                             │
+   │  Pod dies → controller deregisters its IP (draining) and    │
+   │  registers the replacement once Ready + healthy.            │
+   │  Use readiness gates + preStop drain to avoid timeouts.     │
+   └─────────────────────────────────────────────────────────────┘
+   ```
+
 **Service Type Comparison:**
 
-| Feature | ClusterIP | NodePort | LoadBalancer |
-|---------|-----------|----------|--------------|
-| **External Access** | ❌ No | ✅ Yes (via Node IP) | ✅ Yes (via LB DNS) |
-| **Use Case** | Internal only | Dev/Testing | Production |
-| **Cost** | Free | Free | 💰 LB charges apply |
-| **Port Range** | Any | 30000-32767 | Any |
-| **DNS Name** | Internal only | No | ✅ Yes |
-| **Health Checks** | No | Manual | ✅ Automatic |
-| **SSL/TLS** | Manual | Manual | ✅ Built-in |
-| **Security Setup** | None | Security Group | Automatic |
+| Feature                   | ClusterIP     | NodePort             | LoadBalancer        |
+| ------------------------- | ------------- | -------------------- | ------------------- |
+| **External Access** | ❌ No         | ✅ Yes (via Node IP) | ✅ Yes (via LB DNS) |
+| **Use Case**        | Internal only | Dev/Testing          | Production          |
+| **Cost**            | Free          | Free                 | 💰 LB charges apply |
+| **Port Range**      | Any           | 30000-32767          | Any                 |
+| **DNS Name**        | Internal only | No                   | ✅ Yes              |
+| **Health Checks**   | No            | Manual               | ✅ Automatic        |
+| **SSL/TLS**         | Manual        | Manual               | ✅ Built-in         |
+| **Security Setup**  | None          | Security Group       | Automatic           |
 
 ###### NodePort Service Demo:
 
@@ -514,18 +682,19 @@ Even if Pod 1 dies and Pod 4 is created, the service automatically routes traffi
 When working with Kubernetes services, you'll encounter three different port configurations. Understanding these is crucial:
 
 1. **Target Port** (targetPort)
+
    - The port on which your **application is actually running inside the pod**
    - This is the port your container listens on
    - Example: If your nginx container listens on port 80, targetPort = 80
    - Think of it as: "The door to your application inside the container"
-
 2. **Port** (port)
+
    - The port on which the **service is exposed inside the cluster**
    - Other pods in the cluster use this port to connect to your service
    - The service listens on this port and forwards traffic to the targetPort
    - Think of it as: "The door to the service from other pods in the cluster"
-
 3. **NodePort** (nodePort)
+
    - The port exposed on **every worker node in the cluster**
    - Used for external access from outside the cluster
    - Range: 30000-32767 (Kubernetes reserves this range for NodePort services)
@@ -533,6 +702,7 @@ When working with Kubernetes services, you'll encounter three different port con
    - Think of it as: "The door from the outside world to your cluster"
 
 **Detailed Port Flow Diagram:**
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         Traffic Flow                                 │
@@ -541,12 +711,12 @@ When working with Kubernetes services, you'll encounter three different port con
    External User                    Worker Node                    Pod
    (Your Browser)                   (EC2 Instance)                 (Container)
    
-   http://54.1.1.100:30080     
-        │                      
+   http://54.1.1.100:30080   
+        │                  
         │  1. Request arrives
         │  at Worker Node IP
         │  on NodePort 30080
-        │                      
+        │                  
         └────────────────────▶ NodePort: 30080
                                (Listens on ALL nodes)
                                       │
@@ -586,6 +756,7 @@ When working with Kubernetes services, you'll encounter three different port con
 ```
 
 **Traffic Flow Visualization:**
+
 ```
 External User (Browser)
         ↓
@@ -599,30 +770,34 @@ Pod Container (application running on targetPort 80)
 **Step-by-Step Demo:**
 
 - After creating the pod, run this command to create a NodePort service:
-```kubectl expose pod my-first-pod --type=NodePort --name=my-first-service --port=80 --target-port=80
+
+```kubectl
+
 ```
+
 - This command creates a NodePort service named "my-first-service" that:
   - Exposes port 80 for internal cluster access (--port=80)
   - Forwards traffic to port 80 of the "my-first-pod" pod (--target-port=80)
   - Automatically assigns a NodePort in the 30000-32767 range for external access
 - To get the details of the service, run:
-```kubectl get service my-first-service```
+  ``kubectl get service my-first-service``
 - This command displays the details of the service, including the NodePort assigned to it.
 - To access the service from outside the cluster, use the public IP address of any worker node and the NodePort assigned to the service.
 - You can find the public IP addresses of the worker nodes in the EC2 console.
 - To find out what node the pod is running on, run:
-```kubectl get pod my-first-pod -o wide```
+  ``kubectl get pod my-first-pod -o wide``
 - To access the application on a browser get the public ip of the node and the nodeport assigned to the service.
 - For example, if the public IP of the node is 54.210.123.45 and the NodePort assigned to the service is 30080, you can access the application using the URL:
-```http://54.210.123.45:30080```
+  ``http://54.210.123.45:30080``
 - To get the nodeport of the service, run:
-```kubectl get service my-first-service -o jsonpath='{.spec.ports[0].nodePort}'```
+  ``kubectl get service my-first-service -o jsonpath='{.spec.ports[0].nodePort}'``
 
 **⚠️ IMPORTANT: Security Group Configuration for NodePort Access**
 
 Before you can access your application from your local browser, you **MUST** open the NodePort in the worker node security group:
 
 **Why is this required?**
+
 - Kubernetes opens the NodePort on all worker nodes (e.g., 30080)
 - However, AWS Security Groups act as a firewall and **block all inbound traffic by default**
 - Without adding an inbound rule, your browser requests will timeout
@@ -630,11 +805,12 @@ Before you can access your application from your local browser, you **MUST** ope
 **Steps to Configure Security Group:**
 
 1. **Find the Security Group:**
+
    - Go to **EC2 Console** → **Security Groups**
    - Look for the security group attached to your EKS worker nodes
    - Usually named: `eks-cluster-name-node-*` or contains "remote access"
-
 2. **Add Inbound Rule:**
+
    ```
    ┌────────────────────────────────────────────────────────┐
    │  Security Group Inbound Rule Configuration             │
@@ -648,19 +824,21 @@ Before you can access your application from your local browser, you **MUST** ope
    │  Description: NodePort for my-first-service            │
    └────────────────────────────────────────────────────────┘
    ```
-
 3. **Access Your Application:**
+
    - After adding the rule, you can access your app at:
    - `http://<WorkerNodePublicIP>:<NodePort>`
    - Example: `http://54.210.123.45:30080`
 
 **Security Best Practices:**
+
 - ✅ **For Testing**: Use "My IP" to restrict access to only your IP address
 - ✅ **For Production**: Use **LoadBalancer** service type instead (more secure, managed by AWS)
 - ⚠️ **Avoid**: Opening `0.0.0.0/0` unless you need public internet access
 - ⚠️ **Never**: Expose sensitive services (databases, admin panels) via NodePort
 
 **Traffic Flow with Security Group:**
+
 ```
 ┌──────────────┐
 │ Your Browser │  http://54.210.123.45:30080
@@ -687,30 +865,29 @@ With security group rule: ✅ Application accessible
 - The above information can also be found on the console under the services section of the EKS cluster.
 - You are able to access the application on the other node as well since the service is exposed on all nodes in the cluster.
 - To view the pod logs , run:
-```kubectl logs my-first-pod```
+  ``kubectl logs my-first-pod``
 - To view the logs in real-time, run:
-```kubectl logs my-first-pod -f```
+  ``kubectl logs my-first-pod -f``
 - To get the yaml configuration of the pod, run:
-```kubectl get pod my-first-pod -o yaml```
+  ``kubectl get pod my-first-pod -o yaml``
 - This provides the complete configuration of the pod in yaml format.
 
 **Important Concepts About Services:**
 
 1. **Services work across all nodes**: Even though your pod might be running on Node 1, you can access it using the IP of Node 2 or Node 3. The NodePort service listens on ALL worker nodes.
-
 2. **Labels and Selectors**: Services don't target pods by name. They use labels and selectors:
+
    ```
    Service (selector: app=myapp) → finds all Pods (label: app=myapp)
    ```
+
    This means any pod with the matching label will receive traffic from the service.
-
-3. **Automatic Load Balancing**: If you have multiple pods with the same labels, the service automatically distributes traffic across all of them.
-
+3. **Automatic Load Balancing**: If you have multiple pods with the same labels, traffic is automatically distributed across all of them. The actual distribution is done by **kube-proxy** (via iptables/IPVS rules on each node) using the **EndpointSlice** list of Ready pods — not by the Service object itself, which is just a stable virtual IP + selector.
 4. **Service Discovery**: Pods can find services using DNS names. For example, a pod can connect to `my-first-service` using just the service name instead of an IP address.
-
 5. **Security Group Requirements**: Make sure your worker node security group allows inbound traffic on the NodePort range (30000-32767) from your IP address or the internet, depending on your access requirements.
 
 #### ReplicaSets:
+
 - A ReplicaSet is a Kubernetes resource that ensures a specified number of pod replicas are running at any given time.
 - It monitors the pods and automatically creates or deletes pods to maintain the desired number of replicas.
 - ReplicaSets are typically used to ensure high availability and scalability of applications running in a Kubernetes cluster.
@@ -718,10 +895,13 @@ With security group rule: ✅ Application accessible
 - **Labels and selectors** are used to identify and manage the pods that belong to a ReplicaSet.
 - So a combination of replicasets and services help in load balancing and high availability of applications in a kubernetes cluster.
 - The service distributes traffic across the multiple pod replicas managed by the ReplicaSet.
+
 ##### ReplicaSet Demo:
+
 - To create a ReplicaSet, we first need to create a yaml file that defines the Replica
 - Set configuration. Here is an example of a ReplicaSet yaml file named `my-replicaset.yaml`:
-```apiVersion: apps/v1
+
+```apiVersion:
 kind: ReplicaSet
 metadata:
   name: my-replicaset
@@ -740,11 +920,13 @@ spec:
         image: my-app-image
         ports:
         - containerPort: 80
-````
+```
+
 - To expose the replicaset as a service we can either run the cli command shown below or create a service yaml file.
-```kubectl expose rs my-replicaset --type=NodePort --name=my-replicaset-service --port=80 --target-port=80```
+  ``kubectl expose rs my-replicaset --type=NodePort --name=my-replicaset-service --port=80 --target-port=80``
 - To expose it using the yaml file create a file named `my-replicaset-service.yaml` with the following content:
-```apiVersion: v1
+
+```apiVersion:
 kind: Service
 metadata:
   name: my-replicaset-service
@@ -757,23 +939,25 @@ spec:
     port: 80
     targetPort: 80
 ```
+
 - This exposes the ReplicaSet as a NodePort service named "my-replicaset-service" that listens on port 80 and forwards traffic to port 80 of the pods managed by the ReplicaSet.
 - In this case the request gets distributed across the 3 pod replicas created by the ReplicaSet.
 - To verify if the replicaset maintains the pods as expected, we can delete one of the pods and check if the replicaset creates a new pod to maintain the desired number of replicas.
 - First get the list of pods created by the replicaset using the command:
-```kubectl get pods -o wide```
-- This command lists all the pods 
+  ``kubectl get pods -o wide``
+- This command lists all the pods
 - To delete one of the pods, run:
-```kubectl delete pod <pod-name>```
+  ``kubectl delete pod <pod-name>``
 - Replace `<pod-name>` with the name of the pod you want to delete.
 - After deleting the pod, run the command again to get the list of pods:
-```kubectl get pods -o wide```
+  ``kubectl get pods -o wide``
 - You should see that a new pod has been created by the ReplicaSet to maintain the desired number of replicas.
 - We can scale our replica set by changing the replicas count in the yaml file and applying the changes using the command:
-```kubectl apply -f my-replicaset.yaml```
+  ``kubectl apply -f my-replicaset.yaml``
 - **Important concept**: services dont target replicasets by names but rather pods by using labels and selectors.
 
 #### Deployments:
+
 - A Deployment is a higher-level Kubernetes resource that manages ReplicaSets and provides declarative updates to applications.
 - Deployments allow you to define the desired state of your application, including the number of replicas, the container image to use, and other configuration details.
 - When you create a Deployment, Kubernetes automatically creates a ReplicaSet to manage the pods for that Deployment.
@@ -786,37 +970,40 @@ spec:
 - **Canary deployments** are a deployment strategy that allows you to release new versions of your application to a small subset of users before rolling it out to the entire user base.
 - This approach helps minimize the impact of potential issues with the new version by limiting exposure.
 - In Kubernetes, canary deployments can be implemented using Deployments and Services.
+
 ##### Deployment Demo:
+
 - To create a deployment via the cli you can run the command:
-```kubectl create deployment my-deployment --image=njibrigthain100/brigthain:hwv1```
+  ``kubectl create deployment my-deployment --image=njibrigthain100/brigthain:hwv1``
 - This command creates a deployment named "my-deployment" using the specified container image.
 - To expose the deployment as a service, run:
-```kubectl expose deployment my-deployment --type=NodePort --name=my-deployment-service --port=80 --target-port=80```
+  ``kubectl expose deployment my-deployment --type=NodePort --name=my-deployment-service --port=80 --target-port=80``
 - This command creates a NodePort service named "my-deployment-service" that exposes port 80 and forwards traffic to port 80 of the pods managed by the deployment.
 - To verify the deployment and service, run:
-```kubectl get deployments```
-```kubectl get services```
+  ``kubectl get deployments``
+  ``kubectl get services``
 - To scale the deployment, run:
-```kubectl scale deployment my-deployment --replicas=4```
+  ``kubectl scale deployment my-deployment --replicas=4``
 - This command scales the deployment to 4 replicas.
 - To update the deployment with a new container image, first find the container name:
-```kubectl get deployment dashboard -o jsonpath='{.spec.template.spec.containers[*].name}'```
+  ``kubectl get deployment dashboard -o jsonpath='{.spec.template.spec.containers[*].name}'``
 - Then update the image using the correct container name:
-```kubectl set image deployment/my-deployment brigthain=njibrigthain100/brigthain:hwv2 --record=true```
+  ``kubectl set image deployment/my-deployment brigthain=njibrigthain100/brigthain:hwv2 --record=true``
 - This command updates the container image of the deployment to the specified new image.
 - Kubernetes will automatically create a new ReplicaSet with the updated image and gradually replace the old pods
 - To roll back the deployment to the previous version, run:
-```kubectl rollout undo deployment/my-deployment```
+  ``kubectl rollout undo deployment/my-deployment``
 - This command rolls back the deployment to the previous version.
 - To check the rollout status of the deployment, run:
-- ```kubectl rollout status deployment/my-deployment```
+- ``kubectl rollout status deployment/my-deployment``
 - To roll back to the second last version, run:
-```kubectl rollout undo deployment/my-deployment --to-revision=2```
+  ``kubectl rollout undo deployment/my-deployment --to-revision=2``
 - To view the revision history of the deployment, run:
-```kubectl rollout history deployment/my-deployment```
+  ``kubectl rollout history deployment/my-deployment``
 - This command displays the revision history of the deployment, including the revision numbers and the corresponding container images.
 - To create the deployment with a yaml file create a file named `my-deployment.yaml` with the following content:
-```apiVersion: apps/v1
+
+```apiVersion:
 kind: Deployment
 metadata:
   name: my-deployment
@@ -836,8 +1023,9 @@ spec:
         ports:
         - containerPort: 80
 ```
+
 - To create the deployment using the yaml file, run:
-```kubectl apply -f my-deployment.yaml```
+  ``kubectl apply -f my-deployment.yaml``
 - Kubernetetes deployment typically use rolling update strategy by default to update the application with zero downtime.
 - In a rolling update, the deployment gradually replaces old pods with new pods, ensuring that at least a minimum number of pods are always available to serve traffic.
 - This approach allows for a smooth transition between application versions without disrupting service availability.- You can customize the rolling update strategy by specifying parameters such as `maxUnavailable` and `maxSurge` in the deployment yaml file.
@@ -846,70 +1034,79 @@ spec:
 - During an update a new replicaset is created with the new pod template and the old replicaset is scaled down gradually until all the pods are replaced with the new ones.
 
 ##### Deployment Edit using kubectl:
-- This is the method mostly used to update our applications in kubernetes. 
+
+- This is the method mostly used to update our applications in kubernetes.
 - To edit your deployment run the command:
-```kubectl edit deployment my-deployment --record=true```
+  ``kubectl edit deployment my-deployment --record=true``
 - This opens the deployment configuration in the default text editor.
 - Make the necessary changes to the deployment configuration, such as updating the container image or changing the number of replicas.
 - Save and close the editor to apply the changes.
 
 ##### Deployment Rollback application to a previous version:
+
 - To roll back the deployment to the previous version, run:
-```kubectl rollout undo deployment/my-deployment```
+  ``kubectl rollout undo deployment/my-deployment``
 - This command rolls back the deployment to the previous version.
 - To check the rollout status of the deployment, run:
-- ```kubectl rollout status deployment/my-deployment```
+- ``kubectl rollout status deployment/my-deployment``
 - To roll back to the second last version, run:
-```kubectl rollout undo deployment/my-deployment --to-revision=2```
+  ``kubectl rollout undo deployment/my-deployment --to-revision=2``
 - To rollback to a specific revision, run:
-```kubectl rollout undo deployment/my-deployment --to-revision=<revision-number>```
+  ``kubectl rollout undo deployment/my-deployment --to-revision=<revision-number>``
 - To view the revision history of the deployment, run:
-```kubectl rollout history deployment/my-deployment```
+  ``kubectl rollout history deployment/my-deployment``
 - To view exaclty what changed in a specific revision, run:
-```kubectl rollout history deployment/my-deployment --revision=<revision-number>```
-- Now to rollback to previous version you can simp-ly run the undo command without specifying the revision number.
+  ``kubectl rollout history deployment/my-deployment --revision=<revision-number>``
+- Now to rollback to previous version you can simply run the undo command without specifying the revision number.
 - Everytime you make a change to the deployment using the edit command a new revision is created.
 - The revision number is incremented automatically by kubernetes.
 - You can also restart the deployment to recreate all the pods without changing the deployment configuration by running:
-```kubectl rollout restart deployment/my-deployment```
+  ``kubectl rollout restart deployment/my-deployment``
 
 ##### Deployment pausing and resuming deployments:
+
 - To pause a deployment, run:
-```kubectl rollout pause deployment/my-deployment```
+  ``kubectl rollout pause deployment/my-deployment``
 - To resume a paused deployment, run:
-```kubectl rollout resume deployment/my-deployment```
+  ``kubectl rollout resume deployment/my-deployment``
 - This is needed when you want to make **multiple changes** to the deployment configuration without triggering a rollout for each change.
 - You can pause the deployment, make all the necessary changes, and then resume the deployment to apply all the changes at once.
 - Everyytime you create a new deployment a new replicaset is created to manage the pods for that deployment.
 - The old replicaset is retained by default unless you specify a clean up policy to limit the number of old replicasets to retain.
 
 #### Services:
+
 - A Kubernetes Service is an abstraction that defines a logical set of pods and a policy by which to access them.
 - Services enable communication between different components of an application running in a Kubernetes cluster.
 - Services provide a stable IP address and DNS name for a set of pods, allowing other components to access them without needing to know the specific pod IP addresses.
 - Services can be exposed in different ways, such as ClusterIP, NodePort, LoadBalancer, and ExternalName, depending on the use case and requirements.
-**ClusterIP**: The default type of service that exposes the service on a cluster-internal IP. This type makes the service only reachable from within the cluster. This can be used for internal communication between different components of an application. Or for communication between frontend and backend services within the cluster.
-**NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). This type makes the service accessible from outside the cluster using <NodeIP>:<NodePort>. This can be used for development and testing purposes, where you want to access the service from outside the cluster without setting up a load balancer.
-**LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. This type creates an external load balancer that routes traffic to the service. This can be used for production workloads where you want to expose the service to the internet and distribute traffic across multiple pods for high availability and scalability.
-**ingress**: Ingress is not a type of service but rather a separate Kubernetes resource that manages external access to services in a cluster, typically HTTP/HTTPS traffic. Ingress can provide load balancing, SSL termination, and name-based virtual hosting. Ingress controllers are used to implement the ingress resource and route traffic to the appropriate services based on defined rules. Its advanced load balancing which provides context path based routing, SSL, SSL redirects and many more features.
-**ExternalName**: Maps a service to a DNS name outside the cluster. This type can be used to access external services from within the cluster using a consistent DNS name. These are used to access externally hosted apps in kubernetes cluster. For instance AWS RDS database endpoint is to be accessed by an application running in the kubernetes cluster. We can create an externalname service that maps to the RDS endpoint and the application can use the service name to access the database.
-![pic3](screenshots/pic1.png)
+  **ClusterIP**: The default type of service that exposes the service on a cluster-internal IP. This type makes the service only reachable from within the cluster. This can be used for internal communication between different components of an application. Or for communication between frontend and backend services within the cluster.
+  **NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). This type makes the service accessible from outside the cluster using `<NodeIP>`:`<NodePort>`. This can be used for development and testing purposes, where you want to access the service from outside the cluster without setting up a load balancer.
+  **LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. Creating a `type: LoadBalancer` Service is what **provisions** the external LB. On AWS it can run in **instance mode** (LB → node NodePort → kube-proxy → Pod) or, with the AWS Load Balancer Controller + VPC CNI, **IP mode** (LB → Pod IP directly, bypassing the NodePort and kube-proxy). Used for production workloads exposed to the internet with high availability and traffic distribution.
+  **ingress**: Ingress is not a type of service but rather a separate Kubernetes resource that manages external access to services in a cluster, typically HTTP/HTTPS traffic. Ingress can provide load balancing, SSL termination, and name-based virtual hosting. Ingress controllers are used to implement the ingress resource and route traffic to the appropriate services based on defined rules. Its advanced load balancing which provides context path based routing, SSL, SSL redirects and many more features.
+  **ExternalName**: Maps a service to a DNS name outside the cluster. This type can be used to access external services from within the cluster using a consistent DNS name. These are used to access externally hosted apps in kubernetes cluster. For instance AWS RDS database endpoint is to be accessed by an application running in the kubernetes cluster. We can create an externalname service that maps to the RDS endpoint and the application can use the service name to access the database.
+  ![pic3](screenshots/pic1.png)
 
 ##### Services demo:
-- Go to the github reo and proceed to 05- Services with kubectl 
+
+- Go to the github reo and proceed to 05- Services with kubectl
+
 ## Step-01: Introduction to Services
+
 - **Service Types**
   1. ClusterIp
   2. NodePort
   3. LoadBalancer
   4. ExternalName
-- We are going to look in to ClusterIP and NodePort in this section with a detailed example. 
+- We are going to look in to ClusterIP and NodePort in this section with a detailed example.
 - LoadBalancer Type is primarily for cloud providers and it will differ cloud to cloud, so we will do it accordingly (per cloud basis)
-- ExternalName doesn't have Imperative commands and we need to write YAML definition for the same, so we will look in to it as and when it is required in our course. 
+- ExternalName doesn't have Imperative commands and we need to write YAML definition for the same, so we will look in to it as and when it is required in our course.
 
 ## Step-02: ClusterIP Service - Backend Application Setup
+
 - Create a deployment for Backend Application (Spring Boot REST Application)
-- Create a ClusterIP service for load balancing backend application. 
+- Create a ClusterIP service for load balancing backend application.
+
 ```
 # Create Deployment for Backend Rest App
 kubectl create deployment my-backend-rest-app --image=stacksimplify/kube-helloworld:1.0.0 
@@ -920,23 +1117,25 @@ kubectl expose deployment my-backend-rest-app --port=8080 --target-port=8080 --n
 kubectl get svc
 Observation: We don't need to specify "--type=ClusterIp" because default setting is to create ClusterIp Service. 
 ```
-- **Important Note:** If backend application port (Container Port: 8080) and Service Port (8080) are same we don't need to use **--target-port=8080** but for avoiding the confusion i have added it. Same case applies to frontend application and service. 
 
+- **Important Note:** If backend application port (Container Port: 8080) and Service Port (8080) are same we don't need to use **--target-port=8080** but for avoiding the confusion i have added it. Same case applies to frontend application and service.
 - **Backend HelloWorld Application Source** [kube-helloworld](../00-Docker-Images/02-kube-backend-helloworld-springboot/kube-helloworld)
 
 ## Step-03: NodePort Service - Frontend Application Setup
-- We have implemented **NodePort Service** multiple times so far (in pods, replicasets and deployments), even then we are going to implement one more time to get a full architectural view in relation with ClusterIp service. 
+
+- We have implemented **NodePort Service** multiple times so far (in pods, replicasets and deployments), even then we are going to implement one more time to get a full architectural view in relation with ClusterIp service.
 - Create a deployment for Frontend Application (Nginx acting as Reverse Proxy)
-- Create a NodePort service for load balancing frontend application. 
+- Create a NodePort service for load balancing frontend application.
 - **Important Note:** In Nginx reverse proxy, ensure backend service name `my-backend-service` is updated when you are building the frontend container. We already built it and put ready for this demo (stacksimplify/kube-frontend-nginx:1.0.0)
 - **Nginx Conf File**
+
 ```conf
 server {
     listen       80;
     server_name  localhost;
     location / {
-    # Update your backend application Kubernetes Cluster-IP Service name  and port below      
-    # proxy_pass http://<Backend-ClusterIp-Service-Name>:<Port>;      
+    # Update your backend application Kubernetes Cluster-IP Service name  and port below  
+    # proxy_pass http://<Backend-ClusterIp-Service-Name>:<Port>;  
     proxy_pass http://my-backend-service:8080;
     }
     error_page   500 502 503 504  /50x.html;
@@ -945,8 +1144,10 @@ server {
     }
 }
 ```
+
 - **Docker Image Location:** https://hub.docker.com/repository/docker/stacksimplify/kube-frontend-nginx
 - **Frontend Nginx Reverse Proxy Application Source** [kube-frontend-nginx](../00-Docker-Images/03-kube-frontend-nginx)
+
 ```
 # Create Deployment for Frontend Nginx Proxy
 kubectl create deployment my-frontend-nginx-app --image=stacksimplify/kube-frontend-nginx:1.0.0 
@@ -1027,6 +1228,7 @@ http://<node1-public-ip>:<Node-Port>/hello
 - Run this command to create the service account for the secrets store csi driver with the necessary iam permissions:
 ```eksctl create iamserviceaccount --name ecomm-svc --namespace default --cluster int-preproduction-use1-shared-InfoGrid-eks-cluster --role-name sa-role --attach-policy-arn arn:aws:iam::730335294148:policy/eks-test-policy-for-secrets-manager --approve
 ```
+
 - This command creates an iam service account named `ecomm-svc` in the default namespace of the specified eks cluster.
 - The service account is associated with an iam role named `sa-role` that has the specified policy attached to it.
 - This policy allows the service account to access secrets from aws secrets manager.
@@ -1034,6 +1236,7 @@ http://<node1-public-ip>:<Node-Port>/hello
 - Create the pod_with_secretsprovider.yaml file as shown above.
 
 #### Hoe EKS pods access AWS Services:
+
 - How do EKS pods access AWS services securely without using long lived AWS access keys and secret keys?
 - For instance how do the pods access S3 buckets, dynamodb tables, sns topics, sqs queues and other aws services securely?
 - There is a concept in AWS called PIA - Pod Identity Agent.
@@ -1045,13 +1248,19 @@ http://<node1-public-ip>:<Node-Port>/hello
 - The PIA is available as an addon on the eks cluster
 - So to set it up we first create an iam role with the necessary permissions to access the aws resource we want the pod to access.
 - Next we credate a service account within the required namespace and associate the iam role with the service account using the pod identity assoictaion
-- Use the pods_with_pia.yaml file for testing as it has the aws cli installed. 
+- Use the pods_with_pia.yaml file for testing as it has the aws cli installed.
 - Once you have the pod created run the following command to test if it has access to the s3 bucket:
-```kubectl exec -it pod-name -- aws s3 ls s3://your-bucket-name
+
+```kubectl
+
 ```
+
 - for example to access a specific bucket run:
-```kubectl exec -it hway -- aws s3 ls s3://int-preproduction-use1-shared-config-bucket
+
+```kubectl
+
 ```
+
 What is a Kubernetes Service Account?
 A Service Account is a native Kubernetes resource that provides an identity for pods. By itself, it:
 
@@ -1067,13 +1276,16 @@ kind: ServiceAccount
 metadata:
   name: my-app-sa
   namespace: default
+
 # This pod can run but CANNOT access AWS services
+
 ```
 
 ## What is EKS Pod Identity (PIA)?
 
 **EKS Pod Identity** is an AWS feature that **links** a Kubernetes Service Account to an AWS IAM Role, giving pods AWS permissions.
 ```
+
 ┌─────────────────────────┐
 │ Kubernetes Service      │
 │ Account                 │  ←─── Pod uses this
@@ -1094,7 +1306,8 @@ yamlapiVersion: v1
 kind: ServiceAccount
 metadata:
   name: basic-sa
----
+----------------
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1102,9 +1315,10 @@ metadata:
 spec:
   serviceAccountName: basic-sa
   containers:
-  - name: app
-    image: myapp:latest
-Result:
+
+- name: app
+  image: myapp:latest
+  Result:
 
 ✅ Pod has Kubernetes identity
 ❌ Pod CANNOT access AWS services
@@ -1140,6 +1354,7 @@ resource "kubernetes_service_account" "app" {
 }
 
 # 2. Create Pod Identity Association (links SA to IAM role)
+
 resource "aws_eks_pod_identity_association" "app" {
   cluster_name    = "my-cluster"
   namespace       = "default"
@@ -1148,9 +1363,10 @@ resource "aws_eks_pod_identity_association" "app" {
 }
 
 # 3. IAM Role with simple trust policy
+
 resource "aws_iam_role" "pod_role" {
   name = "app-pod-role"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -1162,6 +1378,7 @@ resource "aws_iam_role" "pod_role" {
     }]
   })
 }
+
 ```
 
 **Result:**
@@ -1172,6 +1389,7 @@ resource "aws_iam_role" "pod_role" {
 
 ## Visual Comparison
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                    SERVICE ACCOUNT ONLY                     │
 ├─────────────────────────────────────────────────────────────┤
@@ -1242,31 +1460,39 @@ json{
     ]
   }]
 }
-- To view the IAM role associated to the service account on the console go to the access section on your eks cluster and proceed to the pod identity associations. 
+
+- To view the IAM role associated to the service account on the console go to the access section on your eks cluster and proceed to the pod identity associations.
 - Here you will see the list of service accounts and their associated iam roles.
 
 #### EKS Storage:
+
 - There are several types of EKS storages available:
+
 1. **EBS (Elastic Block Store) CSI Driver**: EBS is a block storage service that provides persistent storage for EKS pods. EBS volumes can be attached to individual pods and provide high-performance storage for applications that require low-latency access to data. EBS Volumes that are attached to an instance are exposed as storage volumes that persist independently from the life of the instance. The volume can be dynamically changed in size, and can be attached to any instance in the same availability zone. AWS recommends EBS for data that must be accessed quickly and requires long term persistence, such as databases, file systems, and applications that require high IOPS.
 2. **EFS (Elastic File System) CSI Driver**: EFS is a file storage service that provides shared storage for EKS pods. EFS volumes can be mounted to multiple pods simultaneously, allowing for easy sharing of data between pods.
 3. **FSx for Lustre CSI Driver**: FSx for Lustre is a high-performance file system that can be used to provide fast storage for EKS pods. FSx for Lustre is designed for applications that require high throughput and low latency access to data, such as machine learning and high-performance computing workloads.
+
 - The drivers are not supported on AWS Fargate yet.
 
 ##### EKS EBS CSI Driver Demo:
+
 - When installing the ebs csi driver on the console you are asked to do thge installation via pod identity or iam role for service account (IRSA).
 - Choose the pod identity method as it is the latest and recommended way.
 - When you complete this aws automatically creates a pod identity association for the ebs csi driver service account with the necessary iam role.
 - It creates a service account named `ebs-csi-controller-sa` in the `kube-system` namespace and associates it with an iam role that has the necessary permissions to manage ebs volumes.
 - In terraform you will have to do the pod identity association manually as shown below:
-```hclresource "aws_eks_pod_identity_association" "ebs_csi" {
+
+```hclresource
   cluster_name    = var.cluster_name
   namespace       = "kube-system"
   service_account = "ebs-csi-controller-sa"
   role_arn        = aws_iam_role.ebs_csi_role.arn
 }
 ```
+
 - This is after the addon is installed on the eks cluster.
-- Notes from udemy class: 
+- Notes from udemy class:
+
 ##### EKS Storage -  Storage Classes, Persistent Volume Claims
 
 **A StorageClass** in EKS (and Kubernetes in general) is a way to define different types of storage that can be dynamically provisioned for your applications.
@@ -1321,6 +1547,7 @@ Why Use ConfigMaps?
 Without ConfigMap ❌
 yaml# Hardcoded in your pod
 containers:
+
 - name: app
   image: myapp:1.0
   env:
@@ -1328,29 +1555,30 @@ containers:
     value: "postgres://db.example.com:5432"  # Hardcoded!
   - name: LOG_LEVEL
     value: "debug"  # Hardcoded!
-With ConfigMap ✅
-yaml# Stored separately, reusable, easy to update
-containers:
+    With ConfigMap ✅
+    yaml# Stored separately, reusable, easy to update
+    containers:
 - name: app
   image: myapp:1.0
   envFrom:
   - configMapRef:
-      name: app-config  # Reference the ConfigMap
-Creating a ConfigMap
-Method 1: From Literal Values (Command Line)
-bashkubectl create configmap app-config \
-  --from-literal=DATABASE_URL=postgres://db.example.com:5432 \
-  --from-literal=LOG_LEVEL=debug \
-  --from-literal=MAX_CONNECTIONS=100
-Method 2: From a File
-bash# Create a config file
-cat > app.properties << EOF
-DATABASE_URL=postgres://db.example.com:5432
-LOG_LEVEL=debug
-MAX_CONNECTIONS=100
-EOF
+    name: app-config  # Reference the ConfigMap
+    Creating a ConfigMap
+    Method 1: From Literal Values (Command Line)
+    bashkubectl create configmap app-config
+    --from-literal=DATABASE_URL=postgres://db.example.com:5432
+    --from-literal=LOG_LEVEL=debug
+    --from-literal=MAX_CONNECTIONS=100
+    Method 2: From a File
+    bash# Create a config file
+    cat > app.properties << EOF
+    DATABASE_URL=postgres://db.example.com:5432
+    LOG_LEVEL=debug
+    MAX_CONNECTIONS=100
+    EOF
 
 # Create ConfigMap from file
+
 kubectl create configmap app-config --from-file=app.properties
 Method 3: Using YAML (Most Common)
 yamlapiVersion: v1
@@ -1362,7 +1590,9 @@ data:
   DATABASE_URL: "postgres://db.example.com:5432"
   LOG_LEVEL: "debug"
   MAX_CONNECTIONS: "100"
-  # You can also store entire files
+
+# You can also store entire files
+
   nginx.conf: |
     server {
       listen 80;
@@ -1379,56 +1609,65 @@ metadata:
   name: myapp
 spec:
   containers:
-  - name: app
-    image: myapp:1.0
-    env:
-    # Single variable from ConfigMap
-    - name: DATABASE_URL
-      valueFrom:
-        configMapKeyRef:
-          name: app-config
-          key: DATABASE_URL
-    # Another variable
-    - name: LOG_LEVEL
-      valueFrom:
-        configMapKeyRef:
-          name: app-config
-          key: LOG_LEVEL
-Option 2: Load All Keys as Environment Variables
-yamlapiVersion: v1
-kind: Pod
-metadata:
-  name: myapp
-spec:
-  containers:
-  - name: app
-    image: myapp:1.0
-    envFrom:
-    - configMapRef:
-        name: app-config  # All keys become env vars
-Option 3: Mount as Files (Volume)
-yamlapiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  containers:
-  - name: nginx
-    image: nginx
-    volumeMounts:
-    - name: config-volume
-      mountPath: /etc/nginx/conf.d  # Mount location
-  volumes:
+
+- name: app
+  image: myapp:1.0
+  env:# Single variable from ConfigMap
+
+  - name: DATABASE_URL
+    valueFrom:
+    configMapKeyRef:
+    name: app-config
+    key: DATABASE_URL
+
+  # Another variable
+
+
+  - name: LOG_LEVEL
+    valueFrom:
+    configMapKeyRef:
+    name: app-config
+    key: LOG_LEVEL
+    Option 2: Load All Keys as Environment Variables
+    yamlapiVersion: v1
+    kind: Pod
+    metadata:
+    name: myapp
+    spec:
+    containers:
+- name: app
+  image: myapp:1.0
+  envFrom:
+
+  - configMapRef:
+    name: app-config  # All keys become env vars
+    Option 3: Mount as Files (Volume)
+    yamlapiVersion: v1
+    kind: Pod
+    metadata:
+    name: nginx
+    spec:
+    containers:
+- name: nginx
+  image: nginx
+  volumeMounts:
+
   - name: config-volume
-    configMap:
-      name: app-config
-      items:
-      - key: nginx.conf        # Key from ConfigMap
-        path: default.conf     # Filename in the pod
+    mountPath: /etc/nginx/conf.d  # Mount location
+    volumes:
+- name: config-volume
+  configMap:
+  name: app-config
+  items:
+
+  - key: nginx.conf        # Key from ConfigMap
+    path: default.conf     # Filename in the pod
+
 ```
 
 Inside the pod, you'll have:
 ```
+
 /etc/nginx/conf.d/default.conf  (contains the nginx.conf content)
 Real-World Example: Application Configuration
 ConfigMap
@@ -1437,12 +1676,15 @@ kind: ConfigMap
 metadata:
   name: web-config
 data:
-  # Simple key-value pairs
+
+# Simple key-value pairs
+
   API_URL: "https://api.example.com"
   FEATURE_FLAG_NEW_UI: "true"
   CACHE_TTL: "3600"
-  
-  # Complete configuration file
+
+# Complete configuration file
+
   config.json: |
     {
       "database": {
@@ -1462,46 +1704,53 @@ metadata:
   name: webapp
 spec:
   containers:
-  - name: app
-    image: mywebapp:1.0
-    # Environment variables
-    env:
-    - name: API_URL
-      valueFrom:
-        configMapKeyRef:
-          name: web-config
-          key: API_URL
-    - name: FEATURE_FLAG_NEW_UI
-      valueFrom:
-        configMapKeyRef:
-          name: web-config
-          key: FEATURE_FLAG_NEW_UI
-    # Mount config file
-    volumeMounts:
-    - name: config
-      mountPath: /app/config
+
+- name: app
+  image: mywebapp:1.0# Environment variables
+
+  env:
+
+  - name: API_URL
+    valueFrom:
+    configMapKeyRef:
+    name: web-config
+    key: API_URL
+  - name: FEATURE_FLAG_NEW_UI
+    valueFrom:
+    configMapKeyRef:
+    name: web-config
+    key: FEATURE_FLAG_NEW_UI
+
+  # Mount config file
+
+  volumeMounts:- name: config
+  mountPath: /app/config
   volumes:
-  - name: config
-    configMap:
-      name: web-config
-      items:
-      - key: config.json
-        path: config.json
-Managing ConfigMaps
-View ConfigMaps
-bash# List all ConfigMaps
-kubectl get configmap
+- name: config
+  configMap:
+  name: web-config
+  items:
+
+  - key: config.json
+    path: config.json
+    Managing ConfigMaps
+    View ConfigMaps
+    bash# List all ConfigMaps
+    kubectl get configmap
 
 # View ConfigMap contents
+
 kubectl describe configmap app-config
 
 # Get as YAML
+
 kubectl get configmap app-config -o yaml
 Update ConfigMap
 bash# Edit directly
 kubectl edit configmap app-config
 
 # Or replace from file
+
 kubectl apply -f configmap.yaml
 Important: Pods don't automatically reload when ConfigMap changes. You need to:
 
@@ -1540,7 +1789,7 @@ yaml   # configmap-dev.yaml
    data:
      ENV: "development"
      API_URL: "http://localhost:8080"
-   
+
 configmap-prod.yaml
    data:
      ENV: "production"
@@ -1551,23 +1800,28 @@ Best Practices
 ✅ One ConfigMap per application or concern
 ✅ Version your ConfigMaps (e.g., app-config-v1, app-config-v2)
 ✅ Use Secrets for passwords, not ConfigMaps
+
 ##### Step-01: Introduction
+
 - We are going to create a MySQL Database with persistence storage using AWS EBS Volumes
 
-| Kubernetes Object  | YAML File |
-| ------------- | ------------- |
-| Storage Class  | 01-storage-class.yml |
-| Persistent Volume Claim | 02-persistent-volume-claim.yml   |
-| Config Map  | 03-UserManagement-ConfigMap.yml  |
-| Deployment, Environment Variables, Volumes, VolumeMounts  | 04-mysql-deployment.yml  |
-| ClusterIP Service  | 05-mysql-clusterip-service.yml  |
+| Kubernetes Object                                        | YAML File                       |
+| -------------------------------------------------------- | ------------------------------- |
+| Storage Class                                            | 01-storage-class.yml            |
+| Persistent Volume Claim                                  | 02-persistent-volume-claim.yml  |
+| Config Map                                               | 03-UserManagement-ConfigMap.yml |
+| Deployment, Environment Variables, Volumes, VolumeMounts | 04-mysql-deployment.yml         |
+| ClusterIP Service                                        | 05-mysql-clusterip-service.yml  |
 
 ##### Step-02: Create following Kubernetes manifests
+
 ###### Create Storage Class manifest
+
 - https://kubernetes.io/docs/concepts/storage/storage-classes/#volume-binding-mode
-- **Important Note:** `WaitForFirstConsumer` mode will delay the volume binding and provisioning  of a PersistentVolume until a Pod using the PersistentVolumeClaim is created. 
+- **Important Note:** `WaitForFirstConsumer` mode will delay the volume binding and provisioning  of a PersistentVolume until a Pod using the PersistentVolumeClaim is created.
 
 ###### Create Persistent Volume Claims manifest
+
 ```
 # Create Storage Class & PVC
 kubectl apply -f kube-manifests/
@@ -1581,18 +1835,23 @@ kubectl get pvc
 # List PV
 kubectl get pv
 ```
+
 ###### Create ConfigMap manifest
-- We are going to create a `usermgmt` database schema during the mysql pod creation time which we will leverage when we deploy User Management Microservice. 
+
+- We are going to create a `usermgmt` database schema during the mysql pod creation time which we will leverage when we deploy User Management Microservice.
 
 ###### Create MySQL Deployment manifest
+
 - Environment Variables
 - Volumes
 - Volume Mounts
 
 ###### Create MySQL ClusterIP Service manifest
-- At any point of time we are going to have only one mysql pod in this design so `ClusterIP: None` will use the `Pod IP Address` instead of creating or allocating a separate IP for `MySQL Cluster IP service`.   
+
+- At any point of time we are going to have only one mysql pod in this design so `ClusterIP: None` will use the `Pod IP Address` instead of creating or allocating a separate IP for `MySQL Cluster IP service`.
 
 ##### Step-03: Create MySQL Database with all above manifests
+
 ```
 # Create MySQL Database
 kubectl apply -f kube-manifests/
@@ -1614,6 +1873,7 @@ kubectl get pods -l app=mysql
 ```
 
 ##### Step-04: Connect to MySQL Database
+
 ```
 # Connect to MYSQL Database
 kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
@@ -1628,35 +1888,35 @@ mysql> show schemas;
 ```
 
 ##### Step-05: References
-- We need to discuss references exclusively here. 
-- These will help you in writing effective templates based on need in your environments. 
-- Few features are still in alpha stage as on today (Example:Resizing), but once they reach beta you can start leveraging those templates and make your trials. 
+
+- We need to discuss references exclusively here.
+- These will help you in writing effective templates based on need in your environments.
+- Few features are still in alpha stage as on today (Example:Resizing), but once they reach beta you can start leveraging those templates and make your trials.
 - **EBS CSI Driver:** https://github.com/kubernetes-sigs/aws-ebs-csi-driver
 - **EBS CSI Driver Dynamic Provisioning:**  https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/dynamic-provisioning
 - **EBS CSI Driver - Other Examples like Resizing, Snapshot etc:** https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes
 - **k8s API Reference Doc:** https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#storageclass-v1-storage-k8s-io
-
 - To list the storage classes in your cluster, run:
-```kubectl get storageclass```
+  ``kubectl get storageclass``
 - To view detailed information about a specific storage class, run:
-```kubectl describe storageclass <storage-class-name>```
+  ``kubectl describe storageclass <storage-class-name>``
 - To list the persistent volume claims (PVCs) in your cluster, run:
-```kubectl get pvc```
+  ``kubectl get pvc``
 - To view detailed information about a specific PVC, run:
-```kubectl describe pvc <pvc-name>```
+  ``kubectl describe pvc <pvc-name>``
 - To list the configmaps in your cluster, run:
-```kubectl get configmap```
+  ``kubectl get configmap``
 - To view detailed information about a specific configmap, run:
-```kubectl describe configmap <configmap-name>```
+  ``kubectl describe configmap <configmap-name>``
 - /docker-entrypoint-initdb.d is a special directory in the MySQL Docker image.
 - Any .sql or .sh files placed in this directory will be automatically executed when the MySQL container is started for the first time.
 - This is useful for initializing the database with custom schemas, tables, or data.
 - Once the persistent volume is created is attached to the MySQL pod, the data stored in the database will persist even if the pod is deleted or recreated.
 - The volume is attached to the node where the pod is scheduled, and the data remains intact as long as the volume exists.
 - To list pods with a specific label run:
-```kubectl get pods -l <label-key>=<label-value>```
+  ``kubectl get pods -l <label-key>=<label-value>``
 - Example:
-```kubectl get pods -l app=mysql```
+  ``kubectl get pods -l app=mysql``
 - To access the MySQL database from within the cluster, you can use the MySQL client image to create a temporary pod that connects to the MySQL service.
 - The command `kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11` creates a temporary pod named `mysql-client` using the MySQL 5.6 image.
 - The `--restart=Never` flag ensures that the pod is not restarted after it exits.
@@ -1664,11 +1924,12 @@ mysql> show schemas;
 - The command `mysql -h mysql -pdbpassword11` connects to the MySQL service using the hostname `mysql` and the password `dbpassword11`.
 
 #### Creating kubernetes Manifest for user management microservice deployment:
+
 - All files for this hands on are located are EKS\yaml-files\class-yaml-files\04-03-UserManagement-MicroService-with-MySQLDB
-What is Postman?
-Postman is a tool that lets you send requests to APIs and see the responses - like a sophisticated web browser, but for developers testing backends instead of visiting websites.
-How It Works - Simple Analogy
-Think of Postman like a mail carrier (hence the name!):
+  What is Postman?
+  Postman is a tool that lets you send requests to APIs and see the responses - like a sophisticated web browser, but for developers testing backends instead of visiting websites.
+  How It Works - Simple Analogy
+  Think of Postman like a mail carrier (hence the name!):
 
 You write a letter (HTTP request)
 Address it to someone (API endpoint URL)
@@ -1676,41 +1937,42 @@ Send it off (click Send)
 Get a response back (API response)
 
 Basic Workflow
+
 1. You create a request:
-Method: GET, POST, PUT, DELETE, etc.
-URL: http://api.example.com/users
-Headers: Authentication tokens, content-type, etc.
-Body: Data you're sending (for POST/PUT)
+   Method: GET, POST, PUT, DELETE, etc.
+   URL: http://api.example.com/users
+   Headers: Authentication tokens, content-type, etc.
+   Body: Data you're sending (for POST/PUT)
 2. Click "Send"
 3. Get a response:
-Status: 200 OK, 404 Not Found, 500 Error, etc.
-Body: JSON data, HTML, XML, etc.
-Time: How long it took
-Real Example - Testing a MySQL API on EKS
-Let's say you deployed an API application in EKS that connects to your MySQL database:
-┌──────────┐      HTTP Request       ┌─────────────┐
-│ Postman  │ ───────────────────────>│   EKS Pod   │
-│ (Laptop) │                         │  (Your API) │
-└──────────┘      HTTP Response      └─────────────┘
-                <───────────────────        │
-                                             │ Queries
-                                             ▼
-                                      ┌─────────────┐
-                                      │ MySQL Pod   │
-                                      │ (Database)  │
-                                      └─────────────┘
-Example Request in Postman:
-Method: POST
-URL: http://your-eks-loadbalancer.com/api/users
-Headers:
-  Content-Type: application/json
-  Authorization: Bearer your-token-here
-Body:
-{
-  "name": "John Doe",
-  "email": "john@example.com"
-}
-What happens:
+   Status: 200 OK, 404 Not Found, 500 Error, etc.
+   Body: JSON data, HTML, XML, etc.
+   Time: How long it took
+   Real Example - Testing a MySQL API on EKS
+   Let's say you deployed an API application in EKS that connects to your MySQL database:
+   ┌──────────┐      HTTP Request       ┌─────────────┐
+   │ Postman  │ ───────────────────────>│   EKS Pod   │
+   │ (Laptop) │                         │  (Your API) │
+   └──────────┘      HTTP Response      └─────────────┘
+   <───────────────────        │
+   │ Queries
+   ▼
+   ┌─────────────┐
+   │ MySQL Pod   │
+   │ (Database)  │
+   └─────────────┘
+   Example Request in Postman:
+   Method: POST
+   URL: http://your-eks-loadbalancer.com/api/users
+   Headers:
+   Content-Type: application/json
+   Authorization: Bearer your-token-here
+   Body:
+   {
+   "name": "John Doe",
+   "email": "john@example.com"
+   }
+   What happens:
 
 Postman sends this HTTP request to your EKS load balancer
 Request routes to your API pod
@@ -1727,12 +1989,14 @@ Body:
   "email": "john@example.com",
   "created_at": "2025-12-30T10:30:00Z"
 }
+
 ```
 
 ## Key Features
 
 **Collections:** Group related requests together
 ```
+
 My API Tests/
 ├── User Management/
 │   ├── Create User (POST)
@@ -1742,10 +2006,12 @@ My API Tests/
 └── Authentication/
     ├── Login (POST)
     └── Logout (POST)
+
 ```
 
 **Environment Variables:** Store values like URLs, tokens
 ```
+
 Development: http://dev-api.com
 Staging: http://staging-api.com
 Production: http://api.com
@@ -1772,8 +2038,8 @@ Alternative: cURL
 Postman is essentially a GUI for what you could do with cURL:
 Postman way: Click buttons, fill forms
 cURL way:
-bashcurl -X POST http://your-api.com/users \
-  -H "Content-Type: application/json" \
+bashcurl -X POST http://your-api.com/users
+  -H "Content-Type: application/json"
   -d '{"name":"John Doe","email":"john@example.com"}'
 Both do the same thing - Postman is just more user-friendly!
 Does this help clarify how Postman works?
@@ -1798,7 +2064,7 @@ Using Browser (Limited)
    → Shows list of users (GET works!)
 
 ❌ Can't create a new user (needs POST)
-❌ Can't update a user (needs PUT)  
+❌ Can't update a user (needs PUT)
 ❌ Can't delete a user (needs DELETE)
 ❌ Can't send authentication tokens easily
 ❌ Can't send JSON data in request body
@@ -1817,19 +2083,20 @@ Using Postman (Full Control)
 ✅ DELETE http://api.example.com/users/123
    → Delete user
 Specific Limitations of Browsers
+
 1. Can't Send Custom Headers Easily
-API requires: Authorization: Bearer abc123token
-Browser: No easy way to add this
-Postman: Add in Headers section
+   API requires: Authorization: Bearer abc123token
+   Browser: No easy way to add this
+   Postman: Add in Headers section
 2. Can't Send JSON Body
-API expects: {"username": "admin", "password": "secret"}
-Browser: Can't send this in a GET request
-Postman: Add in Body section
+   API expects: {"username": "admin", "password": "secret"}
+   Browser: Can't send this in a GET request
+   Postman: Add in Body section
 3. Can't Test Different Methods
-Browser form: Only GET or POST (and POST requires HTML form)
-Postman: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, etc.
-When Browser IS Enough
-Browsers work fine for:
+   Browser form: Only GET or POST (and POST requires HTML form)
+   Postman: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, etc.
+   When Browser IS Enough
+   Browsers work fine for:
 
 ✅ Simple public APIs returning JSON (GET only)
 ✅ Checking if an endpoint is reachable
@@ -1876,23 +2143,28 @@ Browser is like a TV remote that only has an "ON" button
 Postman is like a full control panel with every button you need
 
 #### k8s Secrets, Init Containers, Liveness and Readiness Probes and Request Limits:
+
 ##### Secrets: section 05-01-Kubernetes-Secrets
+
 - Kubernetes Secrets are used to store sensitive information, such as passwords, OAuth tokens, and ssh keys.
 - Storing such information in a Secret is safer and more flexible than putting it verbatim in a Pod definition or in a container image.
 - Kubernetes Secrets let you store and manage sensitive information separately from your application code.
 - This way, you can keep your sensitive data secure and easily update it without changing your application.
 - Secrets are encoded in base64 format to provide a basic level of obfuscation, but they are not encrypted by default.
 - To create a secret from literal values, you can use the following command:
-```bashkubectl create secret generic my-secret \
+
+```bashkubectl
   --from-literal=username=myuser \
   --from-literal=password=mypassword
 ```
-- To encode a passsword to base64 in powershell use the following command 
-```powershell[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("dbpassword11"))```
+
+- To encode a passsword to base64 in powershell use the following command
+  ``powershell[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("dbpassword11"))``
 - This will create an encoded version of the password that you can use in your secret manifest.
 - You can also use the url https://www.base64encode.org/ to encode and decode base64 strings.
 
 ##### Init Containers: section 05-02-Kubernetes-Init-Containers
+
 - Init containers are specialized containers that run before app containers in a pod.
 - They can contain setup scripts and utilities not present in an app image.
 - Init containers always run to completion.
@@ -1902,6 +2174,7 @@ Postman is like a full control panel with every button you need
 - With init containers you can notice that there is no restart for the microservice containers as the init containers waits for the completion of the mysql pod creation and then only the microservice containers are started.
 
 ##### Liveness and Readiness Probes: section 05-03-Kubernetes-Liveness-and-Readiness-Probes
+
 - We have 3 types of probes available in kubernetes:
   1. Liveness Probes
   2. Readiness Probes
@@ -1915,20 +2188,20 @@ Postman is like a full control panel with every button you need
   - Check using commands: /bin/sh -c nc -z localhost 8080
   - Check using HTTP GET requests: http://localhost:8080/health
   - Check using TCP socket: localhost:8080
-          livenessProbe:
-            exec:
-              command: 
-                - /bin/sh
-                - -c 
-                - nc -z localhost 8095
-            initialDelaySeconds: 60
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /usermgmt/health-status
-              port: 8095
-            initialDelaySeconds: 60
-            periodSeconds: 10   
+    livenessProbe:
+    exec:
+    command:
+    - /bin/sh
+    - -c
+    - nc -z localhost 8095
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      readinessProbe:
+      httpGet:
+      path: /usermgmt/health-status
+      port: 8095
+      initialDelaySeconds: 60
+      periodSeconds: 10
 - The above example shows liveness probe using command execution and readiness probe using http get request.
 - Both probes have an initial delay of 60 seconds and will check every 10 seconds thereafter.
 - The liveness probe checks if the application is running on port 8095 using netcat (nc) command.
@@ -1937,19 +2210,19 @@ Postman is like a full control panel with every button you need
 - the /binm/sh -c nc -z localhost 8095 command checks if the application is listening on port 8095 using netcat (nc). The -z option tells nc to scan for listening daemons without sending any data. If the application is running and listening on that port, the command will succeed, indicating that the container is alive.
 - The readiness probe uses an HTTP GET request to the /usermgmt/health-status endpoint on port 8095 to determine if the application is ready to handle requests. If the application responds with a successful status code (e.g., 200 OK), the container is considered ready.
 - For the above readiness probe the application will not start until the readiness probe succeeds. So ensure that the application has implemented the /usermgmt/health-status endpoint to return a successful response when it is ready to handle requests.
-Here's the sequence:
-Container starts - Your application begins running right away
-Initial delay - Kubernetes waits 60 seconds (your initialDelaySeconds)
-First probe - After 60 seconds, Kubernetes performs the first readiness check
-Traffic routing - Only when the probe succeeds does the pod get marked "Ready" and start receiving traffic
-Key distinctions:
-yamlreadinessProbe:
+  Here's the sequence:
+  Container starts - Your application begins running right away
+  Initial delay - Kubernetes waits 60 seconds (your initialDelaySeconds)
+  First probe - After 60 seconds, Kubernetes performs the first readiness check
+  Traffic routing - Only when the probe succeeds does the pod get marked "Ready" and start receiving traffic
+  Key distinctions:
+  yamlreadinessProbe:
   httpGet:
-    path: /health
-    port: 3000
+  path: /health
+  port: 3000
   initialDelaySeconds: 60  # Wait 60s before first check
   periodSeconds: 10         # Check every 10s after that
-What happens during those 60 seconds:
+  What happens during those 60 seconds:
 
 ✅ Container is running
 ✅ Application is starting up
@@ -1961,7 +2234,9 @@ startupProbe - Checks if app has started (protects slow-starting apps)
 readinessProbe - Checks if app is ready to receive traffic
 livenessProbe - Checks if app is still healthy (restarts if failing)
 The 60-second delay is giving your app time to initialize before Kubernetes starts checking if it's ready. Your app is running during that entire time.
+
 #### Request Limits: section 05-04-Kubernetes-Resource-Requests-and-Limits
+
 - In Kubernetes, resource requests and limits are used to manage the CPU and memory resources allocated to containers within a pod.
 - Resource Requests:
   - A resource request is the amount of CPU or memory that a container is guaranteed to have.
@@ -1973,6 +2248,7 @@ The 60-second delay is giving your app time to initialize before Kubernetes star
   - For CPU, the container will be throttled, meaning it will be limited in how much CPU time it can use.
   - For memory, if a container exceeds its memory limit, it may be terminated by the kubelet.
 - Example of Resource Requests and Limits in a Pod Manifest:
+
 ```yamlcontainers:
   - name: my-app
     image: my-app-image
@@ -2038,20 +2314,23 @@ spec:
       memory: "128Mi"
     type: Container
 ```
+
 - In this example, any container created in the `my-namespace` namespace without specified resource requests or limits will default to 250m CPU and 128Mi memory requests, and 500m CPU and 256Mi memory limits.
 - The defaultRequest field sets the default resource requests, while the default field sets the default resource limits.
 - You can apply the LimitRange manifest using the following command:
-```bashkubectl apply -f limitrange.yaml```
+  ``bashkubectl apply -f limitrange.yaml``
 - To view the LimitRanges in a namespace, you can use the following command:
-```bashkubectl get limitrange -n my-namespace```
-- The file namespace-LimitRange-default.yaml contains the default LimitRange configuration for the namespace. It is numbered as 00 to ensure it is applied before other manifests that may create resources in the namespace. 
+  ``bashkubectl get limitrange -n my-namespace``
+- The file namespace-LimitRange-default.yaml contains the default LimitRange configuration for the namespace. It is numbered as 00 to ensure it is applied before other manifests that may create resources in the namespace.
 - All other resource creation willl fail if the namespace is not created first as other resources depend on the namespace being present.
 
 ##### Resource Quotas:
+
 - Resource Quotas are used to limit the total amount of resources that can be consumed by all pods and containers within a namespace.
 - This helps prevent any single team or project from consuming too many resources and affecting others in a multi-tenant environment.
 - You can create a ResourceQuota using the following manifest:
-```yamllkind: ResourceQuota
+
+```yamllkind:
 metadata:
   name: resource-quota
   namespace: my-namespace
@@ -2063,47 +2342,49 @@ spec:
     limits.cpu: "8"  # Limit total CPU limits to 8 cores
     limits.memory: "16Gi"  # Limit total memory limits to 16Gi
 ```
+
 - In this example, the ResourceQuota limits the total number of pods to 10, total CPU requests to 4 cores, total memory requests to 8Gi, total CPU limits to 8 cores, and total memory limits to 16Gi within the `my-namespace` namespace.
 - You can apply the ResourceQuota manifest using the following command:
-How ResourceQuota works:
-yamlapiVersion: v1
-kind: ResourceQuota
-metadata:
+  How ResourceQuota works:
+  yamlapiVersion: v1
+  kind: ResourceQuota
+  metadata:
   name: namespace-quota
   namespace: my-namespace
-spec:
+  spec:
   hard:
-    requests.cpu: "4"        # Total CPU requests across all pods
-    requests.memory: "8Gi"   # Total memory requests across all pods
-    limits.cpu: "8"          # Total CPU limits across all pods
-    limits.memory: "16Gi"    # Total memory limits across all pods
-    pods: "10"               # Max number of pods
-What gets counted:
-✅ requests.cpu - Sum of all pod CPU requests in the namespace
-✅ requests.memory - Sum of all pod memory requests in the namespace
-✅ limits.cpu - Sum of all pod CPU limits in the namespace
-✅ limits.memory - Sum of all pod memory limits in the namespace
-Your example pod:
-yamlresources:
+  requests.cpu: "4"        # Total CPU requests across all pods
+  requests.memory: "8Gi"   # Total memory requests across all pods
+  limits.cpu: "8"          # Total CPU limits across all pods
+  limits.memory: "16Gi"    # Total memory limits across all pods
+  pods: "10"               # Max number of pods
+  What gets counted:
+  ✅ requests.cpu - Sum of all pod CPU requests in the namespace
+  ✅ requests.memory - Sum of all pod memory requests in the namespace
+  ✅ limits.cpu - Sum of all pod CPU limits in the namespace
+  ✅ limits.memory - Sum of all pod memory limits in the namespace
+  Your example pod:
+  yamlresources:
   requests:
-    cpu: "500m"      # This counts toward requests.cpu quota
-    memory: "128Mi"  # This counts toward requests.memory quota
+  cpu: "500m"      # This counts toward requests.cpu quota
+  memory: "128Mi"  # This counts toward requests.memory quota
   limits:
-    cpu: "1000m"     # This counts toward limits.cpu quota
-    memory: "500Mi"  # This counts toward limits.memory quota
-If you have a quota with hard.requests.cpu: "4":
-You could deploy up to 8 of these pods (8 × 500m = 4000m = 4 CPUs)
-The 9th pod would be rejected because it would exceed the quota
-Important notes:
-ResourceQuotas are namespace-scoped, not cluster-wide
-EKS doesn't create ResourceQuotas by default - you have to create them
-Quotas are enforced at pod creation time
-If a pod doesn't specify requests/limits and a quota exists, you must also have a LimitRange to provide defaults
+  cpu: "1000m"     # This counts toward limits.cpu quota
+  memory: "500Mi"  # This counts toward limits.memory quota
+  If you have a quota with hard.requests.cpu: "4":
+  You could deploy up to 8 of these pods (8 × 500m = 4000m = 4 CPUs)
+  The 9th pod would be rejected because it would exceed the quota
+  Important notes:
+  ResourceQuotas are namespace-scoped, not cluster-wide
+  EKS doesn't create ResourceQuotas by default - you have to create them
+  Quotas are enforced at pod creation time
+  If a pod doesn't specify requests/limits and a quota exists, you must also have a LimitRange to provide defaults
 - You can view the resources in the resource quota by running the following command:
-```bashkubectl describe quota resource-quota -n my-namespace```
+  ``bashkubectl describe quota resource-quota -n my-namespace``
 - This will show you the current usage and limits for each resource defined in the ResourceQuota.
 
 #### EKS Storage: RDS DB Introduction:
+
 - Amazon RDS (Relational Database Service) is a managed database service provided by AWS that makes it easier to set up, operate, and scale a relational database in the cloud.
 - With RDS, you can choose from several database engines, including MySQL, PostgreSQL, Oracle, SQL Server, and Amazon Aurora.
 - RDS handles routine database tasks such as provisioning, patching, backup, recovery, and scaling, allowing you to focus on your application rather than database management.
@@ -2118,25 +2399,30 @@ If a pod doesn't specify requests/limits and a quota exists, you must also have 
 - With RDS, you can easily create a MySQL database instance and connect it to your EKS cluster for your applications to use.
 - To create a MySQL RDS instance, you can use the AWS Management Console, AWS CLI, or AWS SDKs.
 - Here are the basic steps to create a MySQL RDS instance using the AWS Management Console
+
 1. Sign in to the AWS Management Console and open the Amazon RDS console.
-2. Click on "Create database" to start the database creation wizard.  
+2. Click on "Create database" to start the database creation wizard.
 3. Select "MySQL" as the database engine and choose the version you want to use.
 4. Choose the "Production" template for a production-ready configuration or "Dev/Test" for a development environment.
 5. Configure the database settings, including instance size, storage type, and allocated storage.
 6. Set the master username and password for the database.
 7. Configure advanced settings, such as VPC, subnet group, security groups, and backup
-    preferences.
+   preferences.
 8. Review your settings and click "Create database" to launch the RDS instance.
-- Once the RDS instance is created, you can connect to it from your EKS cluster 
-using the endpoint provided in the RDS console.
+
+- Once the RDS instance is created, you can connect to it from your EKS cluster
+  using the endpoint provided in the RDS console.
 - Make sure to configure the security group associated with the RDS instance to allow inbound traffic from your EKS cluster's VPC or specific nodes.
 - You can use the following command to connect to the MySQL RDS instance from a pod
+
 ```bash
 kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h <rds-endpoint> -P 3306 -u <master-username> -p
 ```
+
 - We use **ExternalName** service to connect to RDS from EKS cluster.
 - Create a service of type ExternalName that points to the RDS endpoint.
-```yamlapiVersion: v1
+
+```yamlapiVersion:
 kind: Service
 metadata: 
   name: mysql-rds
@@ -2145,26 +2431,36 @@ spec:
   type: ExternalName
   externalName: <rds-endpoint>
 ```
+
 - You can then use the service name `mysql-rds` to connect to the RDS instance from your pods within the EKS cluster.
 - **IMPORTANT**: For the RDS exercise, ensure that you create the database schema `usermgmt` in the RDS instance before deploying the user management microservice.
 - This schema will be created automatically if you are using MySQL deployment in EKS as part of the earlier exercise.
 - However, since we are using RDS here, we need to create the schema manually in the RDS instance.
 - You can create the schema using the following kubectl command:
+
 ```bash
 kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql -h int-preproduction-use1-shared-eks-mysql-db.c0nwwcyeemwq.us-east-1.rds.amazonaws.com -u admin_suitable_coral -p"O<fKWjU:U5=hpHA" --ssl-mode=DISABLED
 ```
+
 - Quoting the password is important here as it contains special characters. This ensures that the shell interprets the password correctly.
 - once logged in run the following commands to create the schema:
-```show schemas;
+
+```show
+
 ```
+
 - This shows the existing schemas in the database.
-```create database usermgmt;
+
+```create
+
 ```
+
 - This creates the `usermgmt` schema in the RDS instance.
 - Exit the mysql client by typing `exit` and pressing Enter.
 - Now you can proceed to deploy the user management microservice in EKS, which will connect to the RDS instance using the `usermgmt` schema.
 
 #### AWS Classic Load Balancer Overview:
+
 - AWS has 3 types of load balancers:
   1. Application Load Balancer (ALB)
   2. Network Load Balancer (NLB)
@@ -2176,6 +2472,7 @@ kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql 
 - In the context of EKS, the choice of load balancer depends on the specific requirements of your application.
 
 #### AWS NetworkLoad Balancer Overview:
+
 - Network Load Balancer (NLB) is a type of load balancer provided by AWS that operates at the transport layer (Layer 4) of the OSI model.
 - NLB is designed to handle high volumes of traffic with low latency and high throughput, making it suitable for applications that require extreme performance and scalability.
 - Key features of Network Load Balancer include:
@@ -2185,7 +2482,8 @@ kubectl run -it --rm --image=mysql:5.7.22 --restart=Never mysql-client -- mysql 
   - Health Checks: NLB performs health checks on registered targets to ensure that traffic is only routed to healthy instances.
   - Integration with AWS Services: NLB integrates seamlessly with other AWS services, such as Amazon EC2, Amazon ECS, and Amazon EKS.
 - To create a network load balancer in kubernetes, you can use the following service manifest:
-```yamlapiVersion: v1 
+
+```yamlapiVersion:
 kind: Service
 metadata:
   name: my-nlb-service
@@ -2200,9 +2498,11 @@ spec:
       port: 80
       targetPort: 8080
 ```
+
 - Unlike with the classic load balancer you need to specify the annotation `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"` to indicate that you want to create a network load balancer.
 
 #### AWS Application Load Balancer and Ingress Overview:
+
 - An application load balancer (ALB) is a type of load balancer provided by AWS that operates at the application layer (Layer 7) of the OSI model.
 - ALB is designed to handle HTTP and HTTPS traffic and provides advanced routing features, such as path-based routing, host-based routing, and support for WebSockets.
 - Key features of Application Load Balancer include:
@@ -2217,28 +2517,37 @@ spec:
 - Also supoorts registering targets by Ip address including targets outside the VPC making it more flexible.
 
 ##### ALB Ingress Controller:
+
 - The ALBIC is a Kubernetes controller that integrates with AWS Application Load Balancer (ALB) to provide ingress functionality for Kubernetes clusters running on AWS.
 - It triggers the creation of an ALB and tyhe necessary supporting AWS resources when ingress resources are created in the Kubernetes cluster with the kubernetes.io/ingress.class: alb annotation.
 - It supports 2 traffic modes: Instance and IP mode.
 - Documentation reference is at https://kubernetes-sigs.github.io/aws-alb-ingress-controller/
+
 ###### Instance mode:
-- Here the ALB routes traffic to the worker node instances, which then forward the traffic to the appropriate pods based on the node's kube-proxy rules. 
-- The traffic reaching the ALB is routed to NodePort of the service, and then kube-proxy on the node forwards the traffic to the appropriate pod. 
-- The above is the default mode of operation for the ALB Ingress Controller. 
+
+- Here the ALB routes traffic to the worker node instances, which then forward the traffic to the appropriate pods based on the node's kube-proxy rules.
+- The traffic reaching the ALB is routed to NodePort of the service, and then kube-proxy on the node forwards the traffic to the appropriate pod.
+- The above is the default mode of operation for the ALB Ingress Controller.
 - You can explicitly set the mode to instance by using the following annotation in the ingress manifest:
+
 ```yamlannotations:
   alb.ingress.kubernetes.io/target-type:instance
 ```
+
 ###### IP mode:
+
 - Here the ALB routes traffic directly to the pod IP addresses, bypassing the worker nodes
 - This mode provides better performance and lower latency since the traffic does not have to go through the worker nodes.
 - To use IP mode, you need to set the following annotation in the ingress manifest:
+
 ```yamlannotations:
   alb.ingress.kubernetes.io/target-type:ip
 ```
+
 - When using fargate profiles with EKS, you must use IP mode for the ALB Ingress Controller since there are no worker nodes to route traffic through.
 
-##### How ALB Ingress works: 
+##### How ALB Ingress works:
+
 - The ALB Ingress Controller watches for ingress resources in the Kubernetes cluster.
 - When an ingress resource is created, the controller creates an ALB and the necessary supporting AWS resources, such as target groups and listeners.
 - The controller configures the ALB to route traffic based on the rules defined in the ingress
@@ -2248,7 +2557,8 @@ spec:
 - To deploy the ALB Ingress Controller in your EKS cluster, you can follow the instructions in the official documentation: https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/controller/setup/
 - Once the ALB Ingress Controller is deployed, you can create ingress resources in your Kubernetes cluster to define the routing rules for your applications.
 - Here is an example ingress manifest that uses the ALB Ingress Controller:
-```yamlapiVersion: networking.k8s.io/v1
+
+```yamlapiVersion:
 kind: Ingress
 metadata:
   name: my-ingress
@@ -2268,13 +2578,15 @@ spec:
                   port:
                     number: 80
 ```
+
 - In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` to the `my-service` service on port 80.
 - The annotations specify that the ALB Ingress Controller should be used and that the ALB should be internet-facing.
 - The loadbalancer is oif type elbv2 which is the application load balancer.
 - You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
 - Deleting the ingress resource will also delete the associated ALB and supporting AWS resources created by the ALB Ingress Controller.
 
-##### ALB Controller: 
+##### ALB Controller:
+
 - The AWS Load Balancer Controller is a Kubernetes controller that manages AWS Elastic Load Balancers (ELB) for a Kubernetes cluster.
 - It supports both Application Load Balancers (ALB) and Network Load Balancers (NLB).
 - The AWS Load Balancer Controller is the successor to the AWS ALB Ingress Controller and provides additional features and improvements.
@@ -2288,23 +2600,27 @@ spec:
 - We have to create an iam role and service account for the controller to work properly.
 - The vpc id and the region are needed wwhen creating the load balancer controller when using ec2 nodes with restricted instance metdata or when using fargate profiles.
 - To verify that the AWS Load Balancer Controller is running, you can use the following command:
-```kubectl get deployment -n kube-system aws-load-balancer-controller```
+  ``kubectl get deployment -n kube-system aws-load-balancer-controller``
 - This will show you the status of the controller deployment in the kube-system namespace.
 - You can also check the service account created for the controller using the following command:
-```kubectl get serviceaccount -n kube-system aws-load-balancer-controller```
+  ``kubectl get serviceaccount -n kube-system aws-load-balancer-controller``
 
 ##### AWS Load balancer Igress Class:
+
 - Some eks clusters can be asscociated with multiple ingress controllers. This can be useful for different teams or applications that require different ingress configurations.
 - However how do we specify which ingress controller to use for a particular ingress resource?
 - This is where ingress classes come into play. It allows you to specify which ingress controller should manage a particular ingress resource.
-- The ingress class determines which controller will manage the ingress resource. 
+- The ingress class determines which controller will manage the ingress resource.
 - To specify the ingress class for the AWS Load Balancer Controller, you can use the following annotation in your ingress manifest:
+
 ```yamlannotations:
   kubernetes.io/ingress.class: alb
 ```
+
 - This annotation tells Kubernetes to use the AWS Load Balancer Controller to manage the ingress resource.
 - Here is an example ingress manifest that uses the AWS Load Balancer Controller:
-```yamlapiVersion: networking.k8s.io/v1
+
+```yamlapiVersion:
 kind: Ingress
 metadata:
   name: my-ingress
@@ -2328,6 +2644,7 @@ spec:
 - You can customize the ingress resource further by adding additional rules, paths, and annotations as needed
 - If the ingress class is not defined as is-default-class:true then in ingress resource we need to define the spec.ingressClassName in ingress resource. 
 ```
+
 apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
@@ -2336,6 +2653,7 @@ metadata:
     ingressclass.kubernetes.io/is-default-class: "true"
 spec:
   controller: ingress.k8s.aws/alb
+
 ```
 - In the above yaml file if line 1882 is not defined then in the ingress resource we need to define the spec.ingressClassName as shown below:
 ```yamlspec:
@@ -2345,9 +2663,11 @@ spec:
       http:
         paths:  
 ```
+
 - But since that is set we do not need to define the spec.ingressClassName in the ingress resource.
 
-#### ALB Ingress Basics Using AWS Application Load Balancer: 
+#### ALB Ingress Basics Using AWS Application Load Balancer:
+
 - Ingress annotations are the load balancer specific configurations that can be applied to an ingress resource in Kubernetes.
 - These annotations allow you to customize the behavior of the load balancer created by the ingress controller.
 - Some common ingress annotations for AWS Application Load Balancer (ALB) include:
@@ -2360,13 +2680,16 @@ spec:
   - `alb.ingress.kubernetes.io/healthy-threshold-count`: Specifies the number of consecutive successful health checks required before considering a target healthy.
   - `alb.ingress.kubernetes.io/unhealthy-threshold-count`: Specifies the number of consecutive failed health checks required before considering a target unhealthy.
 - We also need to specify the ingress class using the following annotation:
+
 ```yaml
 annotations:
   kubernetes.io/ingress.class: alb
 ```
+
 - Also underneath the ingress spec we define the routing rules for the application.
 - Here is an example ingress manifest that uses some of the above annotations:
-```yamlapiVersion: networking.k8s.io/v1 
+
+```yamlapiVersion:
 kind: Ingress
 metadata:
   name: my-ingress
@@ -2399,16 +2722,19 @@ spec:
 alb.ingress.kubernetes.io/subnets: subnet-abc123,subnet-def456
 alb.ingress.kubernetes.io/security-groups: sg-abc123
 ```
+
 - The `alb.ingress.kubernetes.io/subnets` annotation allows you to specify the subnets in which the ALB should be created.
 - The `alb.ingress.kubernetes.io/security-groups` annotation allows you to specify the security groups to associate with the ALB.
 
-##### Demo with defaukt backend: 
+##### Demo with defaukt backend:
+
 - In this demo we will create an ingress resource with a default backend service.
-- The default backend service will handle all requests that do not match any specific rules defined in the ingress resource. 
-- Here the pods containeing the application will be fronted by a nodeport services and the ingress will route traffic to the nodeport service. 
-- So when a user tries to access the application using the ALB DNS name, the request will be routed to the nodeport service, which will then forward the request to one of the pods running the application. 
+- The default backend service will handle all requests that do not match any specific rules defined in the ingress resource.
+- Here the pods containeing the application will be fronted by a nodeport services and the ingress will route traffic to the nodeport service.
+- So when a user tries to access the application using the ALB DNS name, the request will be routed to the nodeport service, which will then forward the request to one of the pods running the application.
 - The below diagram illustrates this flow:
-![ALB Ingress with Default Backend](screenshots/pic2.png)
+  ![ALB Ingress with Default Backend](screenshots/pic2.png)
+
 ```
 # Annotations Reference: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/
 apiVersion: networking.k8s.io/v1
@@ -2426,7 +2752,7 @@ metadata:
     # Health Check Settings
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/healthcheck-path: /app1/index.html    
+    alb.ingress.kubernetes.io/healthcheck-path: /app1/index.html  
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
     alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
     alb.ingress.kubernetes.io/success-codes: '200'
@@ -2440,6 +2766,7 @@ spec:
       port:
         number: 80   
 ```
+
 - In this example, we define an ingress resource named `ingress-nginxapp1` with a default backend service named `app1-nginx-nodeport-service` on port 80.
 - The annotations specify the load balancer name, scheme, and health check settings for the ALB.
 - The `defaultBackend` section specifies the service that will handle all requests that do not match
@@ -2448,7 +2775,8 @@ spec:
 - This simply forwards all requests to the specified service.
 - The rules section is used to define specific routing rules based on the host and path of the incoming request.
 - Here is an example of an ingress manifest with routing rules:
-```yamlapiVersion: networking.k8s.io/v1
+
+```yamlapiVersion:
 kind: Ingress
 metadata:
   name: my-ingress
@@ -2468,25 +2796,28 @@ spec:
                 port:
                   number: 80
 ```
+
 - In this example, the ingress resource defines a rule that routes traffic for the host `myapp.example.com` and path `/app1` to the `app1-service` service on port 80.
 - If a request does not match any of the defined rules, it will result in a 404 Not Found error.
 - You cannot have both `defaultBackend` and `rules` defined in the same ingress resource
-- For path path of type / and path type of type prefix all path will be matched. 
+- For path path of type / and path type of type prefix all path will be matched.
 - For path type of type exact only exact path matches will be routed.
 - For instance if we have the following paths defined:
   - /app1 (Prefix)
   - /app2 (Exact)
-- A request to /app1/home will be routed to app1 service. 
+- A request to /app1/home will be routed to app1 service.
 - A request to /app2 will be routed to app2 service.
 - A request to /app2/home will result in a 404 Not Found error since it does not exactly match /app2.
 - This can be found in the official documentation: https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
 
-#####AWS ALB Ingress context path based routing: 
+#####AWS ALB Ingress context path based routing:
+
 - When deploying to multiple pods and using thesame ingress rule the health check paths are added at the level of the service for each target group created by the ALB Ingress Controller.
 - This means that the alb.ingress.kubernetes.io/healthcheck-path: will be set at the level of the service and not at the level of the ingress rule.
 - Therefore all services behind the ingress must have the same health check path leading to their respective health check endpoints.
 - For example if we have 2 services app1 and app2 behind the same ingress with the following ingress manifest:
-```yamlapiVersion: networking.k8s.io/v1 
+
+```yamlapiVersion:
 kind: Ingress
 metadata:
   name: my-ingress
@@ -2514,24 +2845,29 @@ spec:
               port:
                 number: 80
 ```
+
 - In this example, both app1 and app2 services must have a health check endpoint at /health.
 - If app1 has a health check endpoint at /app1/health and app2 has a health check endpoint at /app2/health, the health checks will fail since the ALB Ingress Controller will use /health for both services.
 - To work around this limitation, you can create separate ingress resources for each service with their own health check paths.
-- Important Note-1: In path based routing order is very important, if we are going to use  "/*" (Root Context), try to use it at the end of all rules. 
+- Important Note-1: In path based routing order is very important, if we are going to use  "/*" (Root Context), try to use it at the end of all rules.
 - This is because if the root context is used at the beginning of the rules, all other paths will be ignored as the root context will match all requests.
 - So never use root context at the beginning of the rules as it will override all other paths.
 - Important Note-2: When using path-based routing with ALB Ingress Controller, ensure that the health check paths for all services are consistent and reachable.
 
 #####AWS ALB Ingress SSL:
+
 - To enable SSL termination on the AWS Application Load Balancer (ALB) created by the ALB Ingress Controller, you need to configure the ingress resource with the appropriate annotations and specify the SSL certificate to be used.
-#####AWS ALB Ingress SSL redirects:
+  #####AWS ALB Ingress SSL redirects:
 - To configure SSL redirection on the AWS Application Load Balancer (ALB) created by the ALB Ingress Controller, you can use the following annotation in your ingress manifest:
+
 ```yaml
 alb.ingress.kubernetes.io/ssl-redirect: "443"
 ```
+
 - This annotation tells the ALB to redirect all HTTP traffic (port 80) to HTTPS (port 443).
 
 #####AWS ALB Ingress External DNS Install and Implementation for Ingress and Service:
+
 - in the previous section we manually created a DNS record in Route53 to point to the ALB created by the ALB Ingress Controller.
 - However, this can be automated using the External DNS tool.
 - External DNS is a Kubernetes add-on that automatically manages DNS records for your Kubernetes resources, such as services and ingresses.
@@ -2540,31 +2876,36 @@ alb.ingress.kubernetes.io/ssl-redirect: "443"
 - We will create a service account, iam role and policy for external dns to work properly with route53.
 - Once External DNS is deployed, it will automatically create and manage DNS records for your services and ingresses based on the annotations you specify in your manifests.
 - To use External DNS with the ALB Ingress Controller, you need to add the following annotation to your ingress manifest:
+
 ```yaml
 external-dns.alpha.kubernetes.io/hostname: myapp.example.com
 ```
+
 - This annotation tells External DNS to create a DNS record for the specified hostname and point it to the ALB created by the ALB Ingress Controller.
 - See section 08-06
 - extrernal service works with IRSA preferably. So the service account created for external dns should be associated with an iam role that has the necessary permissions to manage Route53 records.
+
 1. IAM Policy (JSON file you're showing)
-This defines AWS permissions - what External DNS is allowed to do in AWS Route53:
-route53:ChangeResourceRecordSets - Can create/update/delete DNS records
-route53:ListHostedZones - Can list hosted zones
-route53:ListResourceRecordSets - Can read existing DNS records
+   This defines AWS permissions - what External DNS is allowed to do in AWS Route53:
+   route53:ChangeResourceRecordSets - Can create/update/delete DNS records
+   route53:ListHostedZones - Can list hosted zones
+   route53:ListResourceRecordSets - Can read existing DNS records
 2. external_dns_policy = "upsert-only" (Terraform parameter)
-This defines External DNS behavior - what External DNS will actually do with those permissions:
-"upsert-only" (recommended): Only creates and updates DNS records. Will NOT delete records even if you delete the Kubernetes resource. Safer option.
-"sync": Full synchronization - creates, updates, AND deletes DNS records to match Kubernetes state. More aggressive.
-Example:
-IAM Policy says: "You CAN delete DNS records" (permission granted)external_dns_policy = "upsert-only" says: "But I WON'T delete them" (behavior choice)
-So even though your IAM policy allows deleting records (ChangeResourceRecordSets), the "upsert-only" policy tells External DNS not to use that capability for deletions. If you set it to "sync", External DNS would then actually delete records when resources are removed.
+   This defines External DNS behavior - what External DNS will actually do with those permissions:
+   "upsert-only" (recommended): Only creates and updates DNS records. Will NOT delete records even if you delete the Kubernetes resource. Safer option.
+   "sync": Full synchronization - creates, updates, AND deletes DNS records to match Kubernetes state. More aggressive.
+   Example:
+   IAM Policy says: "You CAN delete DNS records" (permission granted)external_dns_policy = "upsert-only" says: "But I WON'T delete them" (behavior choice)
+   So even though your IAM policy allows deleting records (ChangeResourceRecordSets), the "upsert-only" policy tells External DNS not to use that capability for deletions. If you set it to "sync", External DNS would then actually delete records when resources are removed.
+
 - To check the external dns policy run the following helm command:
-```helm get values external-dns -n kube-system```
+  ``helm get values external-dns -n kube-system``
 - This only works if it was installed using helm.
 
 #####Kubernetes Service demo with external dns:
+
 - In this demo we will create a kubernetes service of type loadbalancer with external dns to automatically create a dns record in route53.
 - In this case external dns will create a dns record for the service in route53.
 - See section 08-08 for more details.
 - Kubernetes service of type load balancer creates a classic load balancer by default and the external dns will create a dns record pointing to the classic load balancer.
-- 
+-
